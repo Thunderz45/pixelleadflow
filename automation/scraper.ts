@@ -6,11 +6,10 @@ const LOCATION = process.env.LOCATION || "Boston";
 const MAX_RESULTS = parseInt(process.env.MAX_RESULTS || "15");
 const PROJECT_ID = process.env.PROJECT_ID || "";
 const AUTH_TOKEN = process.env.AUTH_TOKEN || "";
-const API_BASE_URL = process.env.API_BASE_URL || "http://localhost:3000";
+const API_BASE_URL = process.env.API_BASE_URL || "https://pixelleadflow.vercel.app";
 
 if (!AUTH_TOKEN) {
-  console.error("CRITICAL: AUTH_TOKEN environment variable is required to synchronize lead outputs.");
-  process.exit(1);
+  console.warn("WARNING: AUTH_TOKEN environment variable is not defined. Leads will be parsed and printed in the terminal but cannot be synced to the Dashboard.");
 }
 
 interface LeadData {
@@ -199,8 +198,10 @@ async function runScraper() {
   }
 }
 
-// Post lead details to Next.js API router
 async function saveLeadToDatabase(lead: LeadData): Promise<boolean> {
+  if (!AUTH_TOKEN) {
+    return true; // Count lead as parsed successfully in local CLI mode
+  }
   try {
     const res = await fetch(`${API_BASE_URL}/api/leads/save`, {
       method: "POST",
@@ -220,8 +221,8 @@ async function saveLeadToDatabase(lead: LeadData): Promise<boolean> {
   return false;
 }
 
-// Sync progress record to Next.js API
 async function syncProgressToDashboard(status: string, count: number) {
+  if (!AUTH_TOKEN) return;
   try {
     const res = await fetch(`${API_BASE_URL}/api/scrape/history`, {
       method: "POST",
