@@ -20,14 +20,14 @@ document.addEventListener("DOMContentLoaded", async () => {
   const btnPause = document.getElementById("btn-pause");
   const btnResume = document.getElementById("btn-resume");
   const btnStop = document.getElementById("btn-stop");
-  const btnLoginGoogle = document.getElementById("btn-login-google");
+  const btnLogin = document.getElementById("btn-login");
   const lnkDashboard = document.getElementById("lnk-dashboard");
 
   let token = null;
   let activeApiUrl = "https://pixelleadflow.vercel.app";
 
   // Login click handler: redirect to Next.js dashboard login
-  btnLoginGoogle.addEventListener("click", () => {
+  btnLogin.addEventListener("click", () => {
     chrome.tabs.create({ url: activeApiUrl });
   });
 
