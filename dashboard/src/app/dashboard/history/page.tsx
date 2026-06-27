@@ -92,7 +92,10 @@ export default function HistoryPage() {
           <p className="text-on-surface-variant text-xs">Loading run histories...</p>
         </div>
       ) : runs.length === 0 ? (
-        <div className="glass-panel w-full max-w-xl mx-auto p-12 rounded-xl text-center bg-surface">
+        <div 
+          className="glass-panel rounded-xl text-center bg-surface"
+          style={{ maxWidth: "500px", width: "100%", margin: "40px auto", padding: "48px" }}
+        >
           <span className="material-symbols-outlined text-4xl text-outline mb-4">history</span>
           <h3 className="text-base font-bold text-on-surface">No search logs found</h3>
           <p className="text-xs text-on-surface-variant mt-2 max-w-xs mx-auto leading-relaxed">

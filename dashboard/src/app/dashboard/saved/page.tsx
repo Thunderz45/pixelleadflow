@@ -286,17 +286,15 @@ export default function SavedBusinessesPage() {
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-1.5">
                             <p className="font-bold text-on-surface truncate">{lead.name}</p>
-                            {lead.mapsUrl && (
-                              <a
-                                href={lead.mapsUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-primary hover:text-secondary flex items-center shrink-0"
-                                title="Open in Google Maps"
-                              >
-                                <span className="material-symbols-outlined text-[15px]">location_on</span>
-                              </a>
-                            )}
+                            <a
+                              href={lead.mapsUrl || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(lead.name + " " + lead.address)}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary hover:text-secondary flex items-center shrink-0"
+                              title="Open in Google Maps"
+                            >
+                              <span className="material-symbols-outlined text-[15px]">location_on</span>
+                            </a>
                           </div>
                           <p className="text-[10px] text-on-surface-variant truncate">{lead.address}</p>
                         </div>
