@@ -32,10 +32,10 @@ export default function HistoryPage() {
     if (!user) return;
     try {
       setLoading(true);
+      // Fetch history (without orderBy to bypass composite index requirement)
       const q = query(
         collection(db, "history"), 
-        where("userId", "==", user.uid),
-        orderBy("timestamp", "desc")
+        where("userId", "==", user.uid)
       );
       const querySnapshot = await getDocs(q);
       const list: ScrapeRun[] = [];
@@ -51,6 +51,8 @@ export default function HistoryPage() {
           timestamp: data.timestamp?.toDate() || new Date(),
         });
       });
+      // Sort in-memory by timestamp descending
+      list.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
       setRuns(list);
     } catch (error) {
       console.error("Error fetching history:", error);

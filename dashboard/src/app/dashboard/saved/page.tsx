@@ -56,11 +56,10 @@ export default function SavedBusinessesPage() {
       });
       setProjects(projList);
 
-      // Load leads
+      // Load leads (without orderBy to bypass composite index requirement)
       const q = query(
         collection(db, "businesses"), 
-        where("userId", "==", user.uid),
-        orderBy("createdAt", "desc")
+        where("userId", "==", user.uid)
       );
       const querySnapshot = await getDocs(q);
       const list: Lead[] = [];
@@ -81,6 +80,8 @@ export default function SavedBusinessesPage() {
           createdAt: data.createdAt?.toDate() || new Date(),
         });
       });
+      // Sort in-memory by createdAt descending
+      list.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
       setLeads(list);
     } catch (error) {
       console.error("Error loading leads:", error);

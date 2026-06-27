@@ -20,6 +20,7 @@ interface SavedLead {
   address: string;
   rating: number;
   website: string;
+  createdAt?: any;
 }
 
 export default function DashboardOverview() {
@@ -61,12 +62,10 @@ export default function DashboardOverview() {
         const expSnap = await getDocs(expQuery);
         setTotalExports(expSnap.size);
 
-        // 5. Fetch recent 4 history logs
+        // 5. Fetch recent 4 history logs (bypass index requirement)
         const recentHistQuery = query(
           collection(db, "history"),
-          where("userId", "==", user.uid),
-          orderBy("timestamp", "desc"),
-          limit(4)
+          where("userId", "==", user.uid)
         );
         const recentHistSnap = await getDocs(recentHistQuery);
         const historyList: RunLog[] = [];
@@ -80,14 +79,14 @@ export default function DashboardOverview() {
             timestamp: data.timestamp?.toDate() || new Date(),
           });
         });
-        setRecentRuns(historyList);
+        // Sort and slice in-memory by timestamp descending
+        historyList.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+        setRecentRuns(historyList.slice(0, 4));
 
-        // 6. Fetch recent 4 leads
+        // 6. Fetch recent 4 leads (bypass index requirement)
         const recentBizQuery = query(
           collection(db, "businesses"),
-          where("userId", "==", user.uid),
-          orderBy("createdAt", "desc"),
-          limit(4)
+          where("userId", "==", user.uid)
         );
         const recentBizSnap = await getDocs(recentBizQuery);
         const leadsList: SavedLead[] = [];
@@ -99,9 +98,12 @@ export default function DashboardOverview() {
             address: data.address || "N/A",
             rating: data.rating || 0,
             website: data.website || "",
+            createdAt: data.createdAt?.toDate() || new Date(),
           });
         });
-        setRecentLeads(leadsList);
+        // Sort and slice in-memory by createdAt descending
+        leadsList.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+        setRecentLeads(leadsList.slice(0, 4));
 
       } catch (error) {
         console.error("Error loading dashboard overview:", error);
