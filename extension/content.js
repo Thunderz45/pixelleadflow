@@ -120,6 +120,7 @@ async function runScrapeLoop() {
         // Parse fields
         const parsedLead = parseSidePanelDetails();
         parsedLead.projectId = scrapeState.projectId;
+        parsedLead.mapsUrl = detailUrl.startsWith("http") ? detailUrl : `https://www.google.com${detailUrl}`;
 
         // Verify we collected at least a name
         if (parsedLead.name) {
@@ -186,7 +187,8 @@ function parseSidePanelDetails() {
     address: "N/A",
     phone: "N/A",
     website: "",
-    email: "N/A"
+    email: "N/A",
+    mapsUrl: ""
   };
 
   try {

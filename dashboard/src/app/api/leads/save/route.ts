@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { name, phone, website, email, address, rating, reviewsCount, projectId } = body;
+    const { name, phone, website, email, address, rating, reviewsCount, projectId, mapsUrl } = body;
 
     if (!name) {
       return NextResponse.json({ error: "Name is a required field." }, { status: 400 });
@@ -51,6 +51,7 @@ export async function POST(request: NextRequest) {
       address: address || "N/A",
       rating: parseFloat(rating) || 0,
       reviewsCount: parseInt(reviewsCount) || 0,
+      mapsUrl: mapsUrl || "",
       createdAt: serverTimestamp()
     });
 

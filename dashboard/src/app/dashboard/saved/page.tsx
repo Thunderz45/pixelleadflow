@@ -25,6 +25,7 @@ interface Lead {
   projectId: string;
   projectName?: string;
   createdAt: any;
+  mapsUrl?: string;
 }
 
 interface ProjectFilter {
@@ -78,6 +79,7 @@ export default function SavedBusinessesPage() {
           projectId: data.projectId || "",
           projectName: matchingProj ? matchingProj.name : "Uncategorized",
           createdAt: data.createdAt?.toDate() || new Date(),
+          mapsUrl: data.mapsUrl || "",
         });
       });
       // Sort in-memory by createdAt descending
@@ -281,8 +283,21 @@ export default function SavedBusinessesPage() {
                         <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center font-bold text-primary shrink-0">
                           {lead.name[0].toUpperCase()}
                         </div>
-                        <div className="min-w-0">
-                          <p className="font-bold text-on-surface truncate">{lead.name}</p>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5">
+                            <p className="font-bold text-on-surface truncate">{lead.name}</p>
+                            {lead.mapsUrl && (
+                              <a
+                                href={lead.mapsUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-primary hover:text-secondary flex items-center shrink-0"
+                                title="Open in Google Maps"
+                              >
+                                <span className="material-symbols-outlined text-[15px]">location_on</span>
+                              </a>
+                            )}
+                          </div>
                           <p className="text-[10px] text-on-surface-variant truncate">{lead.address}</p>
                         </div>
                       </div>

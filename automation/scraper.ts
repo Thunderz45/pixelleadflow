@@ -157,11 +157,13 @@ async function runScraper() {
               phone,
               website,
               email,
-              projectId: projId
+              projectId: projId,
+              mapsUrl: "" // Will be assigned below
             };
           }, PROJECT_ID);
 
           if (parsedLead.name) {
+            parsedLead.mapsUrl = cardUrl.startsWith("http") ? cardUrl : `https://www.google.com${cardUrl}`;
             console.log(`Collected: ${parsedLead.name} (${parsedLead.phone})`);
             
             // Save lead to database
