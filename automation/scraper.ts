@@ -42,6 +42,8 @@ async function runScraper() {
   // Update starting status in dashboard
   await syncProgressToDashboard("searching", 0);
 
+  let collectedLeadsCount = 0;
+
   try {
     const searchUrl = `https://www.google.com/maps/search/${encodeURIComponent(KEYWORD + " " + LOCATION)}`;
     console.log(`Navigating to Google Maps search URL...`);
@@ -53,8 +55,6 @@ async function runScraper() {
     await page.waitForSelector(feedSelector, { timeout: 15000 }).catch(() => {
       console.log("Standard role='feed' selector not found. Trying fallback selectors.");
     });
-
-    let collectedLeadsCount = 0;
     const processedUrls = new Set<string>();
 
     await syncProgressToDashboard("collecting", 0);
