@@ -64,13 +64,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.setItem("leadflow_auth_token", token);
         localStorage.setItem("leadflow_user_email", firebaseUser.email || "");
         localStorage.setItem("leadflow_user_id", firebaseUser.uid);
-        document.cookie = `leadflow_auth_token=${token}; path=/; max-age=3600; SameSite=Lax`;
+        const isSecure = typeof window !== "undefined" && window.location.protocol === "https:";
+        const cookieDirective = isSecure ? "; SameSite=None; Secure" : "; SameSite=Lax";
+        document.cookie = `leadflow_auth_token=${token}; path=/; max-age=3600${cookieDirective}`;
       } else {
         setUser(null);
         localStorage.removeItem("leadflow_auth_token");
         localStorage.removeItem("leadflow_user_email");
         localStorage.removeItem("leadflow_user_id");
-        document.cookie = "leadflow_auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+        const isSecure = typeof window !== "undefined" && window.location.protocol === "https:";
+        const cookieDirective = isSecure ? "; SameSite=None; Secure" : "; SameSite=Lax";
+        document.cookie = `leadflow_auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT${cookieDirective}`;
       }
       setLoading(false);
     });
