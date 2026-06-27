@@ -13,6 +13,7 @@
     "http://localhost/*",
     "http://127.0.0.1/*",
     "https://*.google.com/maps/*",
+    "https://*.vercel.app/*",
     "https://pixel-leadflow.firebaseapp.com/*"
   ],
   "action": {

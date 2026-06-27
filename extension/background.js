@@ -18,6 +18,9 @@ async function detectActivePort() {
               (urlObj.port === "3001")) {
             return urlObj.origin;
           }
+          if (urlObj.hostname.endsWith(".vercel.app")) {
+            return urlObj.origin;
+          }
         } catch (e) {}
       }
     }

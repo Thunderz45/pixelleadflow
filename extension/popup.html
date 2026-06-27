@@ -15,9 +15,9 @@
       font-family: 'Inter', sans-serif;
       background-color: #faf8ff;
       color: #191b23;
+      height: 520px;
       display: flex;
       flex-direction: column;
-      height: 520px;
     }
     .material-symbols-outlined {
       font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
@@ -33,6 +33,74 @@
     .custom-scrollbar::-webkit-scrollbar-thumb {
       background: #c3c6d7;
       border-radius: 10px;
+    }
+    
+    /* Login Screen CTA Styling */
+    .login-screen-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 24px;
+      height: 100%;
+      text-align: center;
+      gap: 20px;
+    }
+    .login-icon-badge {
+      width: 56px;
+      height: 56px;
+      background-color: #004ac6;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 16px;
+      color: white;
+      box-shadow: 0 8px 20px rgba(0, 74, 198, 0.2);
+      margin-bottom: 8px;
+    }
+    .login-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #004ac6;
+      margin: 0;
+    }
+    .login-desc {
+      font-size: 12px;
+      color: #434655;
+      line-height: 1.6;
+      margin: 0 12px 12px 12px;
+    }
+    .btn-login {
+      width: 100%;
+      background-color: #004ac6;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 12px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 12px rgba(0, 74, 198, 0.2);
+      transition: all 0.2s;
+    }
+    .btn-login:hover {
+      background-color: #003ea8;
+      transform: translateY(-1px);
+    }
+    .btn-login:active {
+      transform: scale(0.98);
+    }
+    
+    /* App Screen Styling */
+    .app-screen-container {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      width: 100%;
     }
     
     /* Header Area */
@@ -314,122 +382,140 @@
 </head>
 <body class="custom-scrollbar">
   
-  <!-- Header Section -->
-  <header class="header">
-    <div class="header-logo">
-      <div class="logo-badge">
-        <span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">bolt</span>
-      </div>
-      <span class="logo-text">LeadFlow Agent</span>
+  <!-- Login Screen Panel (Visible when unauthenticated) -->
+  <div id="login-screen" class="login-screen-container">
+    <div class="login-icon-badge">
+      <span class="material-symbols-outlined text-[32px]" style="font-variation-settings: 'FILL' 1;">bolt</span>
     </div>
-    <span class="auth-badge" id="auth-status">
-      Loading Auth...
-    </span>
-  </header>
-
-  <!-- Form Options Section -->
-  <main class="container">
-    
-    <!-- Project Selection -->
-    <div class="form-group">
-      <label class="form-label">Active Project</label>
-      <div class="input-wrapper">
-        <select id="project-select" class="input-control">
-          <option value="">Uncategorized</option>
-        </select>
-        <span class="material-symbols-outlined select-chevron">
-          expand_more
-        </span>
-      </div>
+    <div>
+      <h2 class="login-title">LeadFlow Agent</h2>
+      <p class="login-desc">Please log in to your LeadFlow dashboard to authorize browser automation and start collecting B2B leads.</p>
     </div>
+    <button id="btn-login" class="btn-login">
+      <span class="material-symbols-outlined">login</span>
+      Sign In via Dashboard
+    </button>
+  </div>
 
-    <!-- Keyword -->
-    <div class="form-group">
-      <label class="form-label">Search Keyword</label>
-      <div class="input-wrapper">
-        <span class="material-symbols-outlined input-icon-left">
-          search
-        </span>
-        <input id="keyword-input" class="input-control input-control-icon-left" placeholder="e.g. Dentists" type="text" />
+  <!-- App Screen Wrapper (Visible when authenticated) -->
+  <div id="app-screen" class="app-screen-container" style="display: none;">
+    <!-- Header Section -->
+    <header class="header">
+      <div class="header-logo">
+        <div class="logo-badge">
+          <span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">bolt</span>
+        </div>
+        <span class="logo-text">LeadFlow Agent</span>
       </div>
-    </div>
+      <span class="auth-badge" id="auth-status">
+        Loading Auth...
+      </span>
+    </header>
 
-    <!-- Location -->
-    <div class="form-group">
-      <label class="form-label">Location Area</label>
-      <div class="input-wrapper">
-        <span class="material-symbols-outlined input-icon-left">
-          location_on
-        </span>
-        <input id="location-input" class="input-control input-control-icon-left" placeholder="e.g. Boston, MA" type="text" />
-      </div>
-    </div>
-
-    <!-- Limit -->
-    <div class="form-group">
-      <label class="form-label">Max Leads Limit</label>
-      <div class="input-wrapper">
-        <span class="material-symbols-outlined input-icon-left">
-          tag
-        </span>
-        <input id="limit-input" class="input-control input-control-icon-left" value="50" min="10" max="500" type="number" />
-      </div>
-    </div>
-
-    <!-- Controls Grid -->
-    <div class="btn-grid">
-      <button id="btn-start" class="btn btn-start">
-        <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
-        Start
-      </button>
+    <!-- Form Options Section -->
+    <main class="container">
       
-      <!-- Resume button shares Start slot visually when active -->
-      <button id="btn-resume" class="btn btn-start" style="display:none;">
-        <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
-        Resume
-      </button>
-      
-      <button id="btn-pause" class="btn btn-pause" disabled>
-        <span class="material-symbols-outlined">pause</span>
-        Pause
-      </button>
-      
-      <button id="btn-stop" class="btn btn-stop" disabled>
-        <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">stop</span>
-        Stop
-      </button>
-    </div>
+      <!-- Project Selection -->
+      <div class="form-group">
+        <label class="form-label">Active Project</label>
+        <div class="input-wrapper">
+          <select id="project-select" class="input-control">
+            <option value="">Uncategorized</option>
+          </select>
+          <span class="material-symbols-outlined select-chevron">
+            expand_more
+          </span>
+        </div>
+      </div>
 
-    <!-- Progress Card Section -->
-    <div class="progress-card">
-      <div class="progress-header">
-        <div>
-          <span class="progress-title">Scrape Progress</span>
-          <div class="progress-value-wrapper">
-            <span id="leads-count" class="progress-count">0</span>
-            <span class="progress-count-label">Leads Gathered</span>
+      <!-- Keyword -->
+      <div class="form-group">
+        <label class="form-label">Search Keyword</label>
+        <div class="input-wrapper">
+          <span class="material-symbols-outlined input-icon-left">
+            search
+          </span>
+          <input id="keyword-input" class="input-control input-control-icon-left" placeholder="e.g. Dentists" type="text" />
+        </div>
+      </div>
+
+      <!-- Location -->
+      <div class="form-group">
+        <label class="form-label">Location Area</label>
+        <div class="input-wrapper">
+          <span class="material-symbols-outlined input-icon-left">
+            location_on
+          </span>
+          <input id="location-input" class="input-control input-control-icon-left" placeholder="e.g. Boston, MA" type="text" />
+        </div>
+      </div>
+
+      <!-- Limit -->
+      <div class="form-group">
+        <label class="form-label">Max Leads Limit</label>
+        <div class="input-wrapper">
+          <span class="material-symbols-outlined input-icon-left">
+            tag
+          </span>
+          <input id="limit-input" class="input-control input-control-icon-left" value="50" min="10" max="500" type="number" />
+        </div>
+      </div>
+
+      <!-- Controls Grid -->
+      <div class="btn-grid">
+        <button id="btn-start" class="btn btn-start">
+          <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+          Start
+        </button>
+        
+        <!-- Resume button shares Start slot visually when active -->
+        <button id="btn-resume" class="btn btn-start" style="display:none;">
+          <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+          Resume
+        </button>
+        
+        <button id="btn-pause" class="btn btn-pause" disabled>
+          <span class="material-symbols-outlined">pause</span>
+          Pause
+        </button>
+        
+        <button id="btn-stop" class="btn btn-stop" disabled>
+          <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">stop</span>
+          Stop
+        </button>
+      </div>
+
+      <!-- Progress Card Section -->
+      <div class="progress-card">
+        <div class="progress-header">
+          <div>
+            <span class="progress-title">Scrape Progress</span>
+            <div class="progress-value-wrapper">
+              <span id="leads-count" class="progress-count">0</span>
+              <span class="progress-count-label">Leads Gathered</span>
+            </div>
+          </div>
+          <div class="status-wrapper">
+            <span class="status-label">Engine Status</span>
+            <span id="engine-status" class="status-value status-ready text-xs">Ready</span>
           </div>
         </div>
-        <div class="status-wrapper">
-          <span class="status-label">Engine Status</span>
-          <span id="engine-status" class="status-value status-ready text-xs">Ready</span>
+        
+        <div class="progress-bar-bg">
+          <div id="progress-fill" class="progress-bar-fill"></div>
         </div>
       </div>
-      
-      <div class="progress-bar-bg">
-        <div id="progress-fill" class="progress-bar-fill"></div>
-      </div>
-    </div>
 
-  </main>
+    </main>
 
-  <!-- Footer -->
-  <footer class="footer">
-    <a href="http://localhost:3001/dashboard" target="_blank" id="lnk-dashboard" class="footer-link">
-      <span class="material-symbols-outlined text-[16px]">dashboard</span>
-      Open Dashboard
-    </a>
-  </footer>
+    <!-- Footer -->
+    <footer class="footer">
+      <a href="http://localhost:3001/dashboard" target="_blank" id="lnk-dashboard" class="footer-link">
+        <span class="material-symbols-outlined text-[16px]">dashboard</span>
+        Open Dashboard
+      </a>
+    </footer>
+  </div>
 
   <script src="popup.js"></script>
 </body>

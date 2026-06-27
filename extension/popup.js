@@ -1,6 +1,10 @@
 // LeadFlow Popup Controller
 
 document.addEventListener("DOMContentLoaded", async () => {
+  // Screens
+  const loginScreen = document.getElementById("login-screen");
+  const appScreen = document.getElementById("app-screen");
+
   // UI Bindings
   const authStatusEl = document.getElementById("auth-status");
   const projectSelectEl = document.getElementById("project-select");
@@ -16,28 +20,57 @@ document.addEventListener("DOMContentLoaded", async () => {
   const btnPause = document.getElementById("btn-pause");
   const btnResume = document.getElementById("btn-resume");
   const btnStop = document.getElementById("btn-stop");
+  const btnLogin = document.getElementById("btn-login");
+  const lnkDashboard = document.getElementById("lnk-dashboard");
 
   let token = null;
+  let activeApiUrl = "http://localhost:3001";
+
+  // Login click handler: redirect to Next.js dashboard login
+  btnLogin.addEventListener("click", () => {
+    chrome.storage.local.get("authState", (data) => {
+      const url = (data.authState && data.authState.apiUrl) || activeApiUrl;
+      chrome.tabs.create({ url });
+    });
+  });
 
   // Initialize and Sync Auth Session
   chrome.runtime.sendMessage({ action: "SYNC_AUTH" }, (response) => {
     if (chrome.runtime.lastError) {
       console.warn("Could not reach background script:", chrome.runtime.lastError);
       authStatusEl.innerText = "Error syncing";
-      authStatusEl.className = "auth-error";
+      authStatusEl.className = "auth-badge auth-error";
+      
+      loginScreen.style.display = "flex";
+      appScreen.style.display = "none";
       return;
     }
 
     if (!response) {
       console.warn("Empty response received from background script.");
       authStatusEl.innerText = "Error syncing";
+      loginScreen.style.display = "flex";
+      appScreen.style.display = "none";
       return;
     }
+
     const { auth, projects } = response;
     if (auth && auth.authenticated) {
       token = auth.token;
+      activeApiUrl = auth.apiUrl || "http://localhost:3001";
+      
       authStatusEl.innerText = auth.email;
       authStatusEl.title = auth.email;
+      authStatusEl.className = "auth-badge";
+      
+      // Update footer redirect link to point to the active host Vercel/Local
+      if (lnkDashboard) {
+        lnkDashboard.href = `${activeApiUrl}/dashboard`;
+      }
+
+      // Show App panel, hide login CTA
+      loginScreen.style.display = "none";
+      appScreen.style.display = "flex";
       
       // Populate projects select dropdown
       projectSelectEl.innerHTML = '<option value="">Uncategorized</option>';
@@ -50,9 +83,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
       }
     } else {
-      authStatusEl.innerHTML = '<span class="auth-error">Not Logged In</span>';
-      disableInputs(true);
-      btnStart.disabled = true;
+      // Not authenticated, prompt login screen
+      loginScreen.style.display = "flex";
+      appScreen.style.display = "none";
     }
   });
 
@@ -78,6 +111,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   function updateUIState(state) {
+    if (!engineStatusEl) return;
+    
     engineStatusEl.innerText = state.status;
     engineStatusEl.className = `status-value status-${state.status.toLowerCase()}`;
     leadsCountEl.innerText = state.leadsCount;
