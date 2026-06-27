@@ -6,8 +6,9 @@
   "permissions": [
     "storage",
     "cookies",
-    "activeTab",
-    "tabs"
+    "alarms",
+    "tabs",
+    "scripting"
   ],
   "host_permissions": [
     "https://*.google.com/maps/*",

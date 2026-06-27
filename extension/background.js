@@ -3,24 +3,67 @@ let activeScrapeTabId = null;
 const VERCEL_URL = "https://pixelleadflow.vercel.app";
 let detectedApiUrl = VERCEL_URL;
 
+// Fallback: Query tab local storage directly if cookie reading is restricted
+async function getAuthTokenFromLocalStorage() {
+  try {
+    const tabs = await chrome.tabs.query({ url: "*://pixelleadflow.vercel.app/*" });
+    if (tabs && tabs.length > 0) {
+      // Use scripting API to grab localStorage variables from active tab
+      const results = await chrome.scripting.executeScript({
+        target: { tabId: tabs[0].id },
+        func: () => {
+          return {
+            token: localStorage.getItem("leadflow_auth_token"),
+            email: localStorage.getItem("leadflow_user_email"),
+            uid: localStorage.getItem("leadflow_user_id")
+          };
+        }
+      });
+      if (results && results[0] && results[0].result) {
+        return results[0].result;
+      }
+    }
+  } catch (err) {
+    console.warn("Could not read auth from tab localStorage:", err);
+  }
+  return null;
+}
+
 // Synchronize authentication from dashboard cookies
 async function syncAuthState() {
   try {
+    // 1. Try reading the cookie (port/scheme checked)
     const cookie = await chrome.cookies.get({
-      url: VERCEL_URL,
+      url: VERCEL_URL + "/",
       name: "leadflow_auth_token"
     });
 
-    if (cookie && cookie.value) {
-      const token = cookie.value;
+    let token = cookie ? cookie.value : null;
+    let email = null;
+    let uid = null;
+
+    if (token) {
       const payloadBase64 = token.split('.')[1];
       const payloadDecoded = JSON.parse(atob(payloadBase64.replace(/-/g, '+').replace(/_/g, '/')));
-      
+      email = payloadDecoded.email;
+      uid = payloadDecoded.user_id || payloadDecoded.sub;
+    } else {
+      // 2. Fallback: Query tab localStorage directly
+      const tabData = await getAuthTokenFromLocalStorage();
+      if (tabData && tabData.token) {
+        token = tabData.token;
+        email = tabData.email;
+        uid = tabData.uid;
+        console.log("LeadFlow Auth: Successfully synchronized credentials from tab localStorage.");
+      }
+    }
+
+    if (token) {
       const authState = {
         authenticated: true,
         token: token,
-        uid: payloadDecoded.user_id || payloadDecoded.sub,
-        email: payloadDecoded.email || "Sync Active",
+        uid: uid || "user",
+        email: email || "Sync Active",
         apiUrl: VERCEL_URL
       };
 
