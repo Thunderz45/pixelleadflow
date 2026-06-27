@@ -52,11 +52,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const SidebarContent = () => (
     <>
       <div className="px-6 mb-10 flex items-center gap-3">
-        <div className="w-10 h-10 bg-primary-container/20 rounded-xl flex items-center justify-center text-primary">
-          <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>
-            dataset
-          </span>
-        </div>
+        <img src="/logo.png" alt="LeadFlow Logo" className="w-10 h-10 rounded-full object-cover shadow shadow-primary/10" />
         <div>
           <h1 className="font-headline-md text-xl font-bold text-primary leading-none">LeadFlow</h1>
           <p className="text-[10px] font-label-md text-on-surface-variant uppercase tracking-wider mt-0.5">Premium SaaS</p>

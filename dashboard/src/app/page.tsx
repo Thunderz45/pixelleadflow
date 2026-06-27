@@ -84,11 +84,7 @@ export default function LoginPage() {
           
           {/* Brand Logo */}
           <div className="mb-8 flex flex-col items-center gap-2">
-            <div className="w-12 h-12 bg-primary flex items-center justify-center rounded-lg shadow-lg shadow-primary/20">
-              <span className="material-symbols-outlined text-white text-[28px]" style={{ fontVariationSettings: "'FILL' 1" }}>
-                rocket_launch
-              </span>
-            </div>
+            <img src="/logo.png" alt="LeadFlow Logo" className="w-12 h-12 rounded-full shadow-lg shadow-primary/20 object-cover" />
             <h1 className="text-2xl font-bold text-primary tracking-tight">LeadFlow</h1>
           </div>
 
