@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>LeadFlow Agent</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      width: 360px;
+      margin: 0;
+      overflow: hidden;
+      font-family: 'Inter', sans-serif;
+      background-color: #faf8ff;
+      color: #191b23;
+      display: flex;
+      flex-direction: column;
+      height: 520px;
+    }
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #c3c6d7;
+      border-radius: 10px;
+    }
+    
+    /* Header Area */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background-color: rgba(250, 248, 255, 0.85);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid #c3c6d7;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+    .header-logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .logo-badge {
+      width: 32px;
+      height: 32px;
+      background-color: #004ac6;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      color: white;
+      box-shadow: 0 4px 10px rgba(0, 74, 198, 0.15);
+    }
+    .logo-text {
+      font-weight: 700;
+      font-size: 15px;
+      color: #004ac6;
+      letter-spacing: -0.02em;
+    }
+    .auth-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 4px 10px;
+      background-color: rgba(0, 74, 198, 0.05);
+      color: #004ac6;
+      border-radius: 9999px;
+      max-width: 150px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .auth-error {
+      color: #ba1a1a;
+      background-color: rgba(186, 26, 26, 0.05);
+    }
+    
+    /* Main Content Wrapper */
+    .container {
+      flex: 1;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      overflow-y: auto;
+    }
+    
+    /* Form Elements */
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .form-label {
+      font-size: 10px;
+      font-weight: 700;
+      color: #434655;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .input-icon-left {
+      position: absolute;
+      left: 12px;
+      color: #737686;
+      font-size: 18px;
+    }
+    .input-control {
+      width: 100%;
+      background: #ffffff;
+      border: 1px solid #c3c6d7;
+      border-radius: 8px;
+      padding: 8px 12px;
+      color: #191b23;
+      font-size: 13px;
+      outline: none;
+      transition: all 0.2s;
+    }
+    .input-control-icon-left {
+      padding-left: 36px;
+    }
+    .input-control:focus {
+      border-color: #004ac6;
+      box-shadow: 0 0 0 3px rgba(0, 74, 198, 0.08);
+    }
+    
+    .select-chevron {
+      position: absolute;
+      right: 12px;
+      color: #434655;
+      pointer-events: none;
+      font-size: 18px;
+    }
+    select.input-control {
+      appearance: none;
+      padding-right: 32px;
+      cursor: pointer;
+    }
+    
+    /* Controls Grid */
+    .btn-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      margin-top: 4px;
+    }
+    .btn {
+      border: none;
+      border-radius: 12px;
+      padding: 10px 4px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      transition: all 0.2s;
+    }
+    .btn-start {
+      background-color: rgba(0, 74, 198, 0.08);
+      color: #004ac6;
+    }
+    .btn-start:hover:not(:disabled) {
+      background-color: rgba(0, 74, 198, 0.12);
+      transform: translateY(-1px);
+    }
+    .btn-pause {
+      background-color: #e7e7f3;
+      color: #434655;
+    }
+    .btn-pause:hover:not(:disabled) {
+      background-color: #e1e2ed;
+      transform: translateY(-1px);
+    }
+    .btn-stop {
+      background-color: #ffdad6;
+      color: #ba1a1a;
+    }
+    .btn-stop:hover:not(:disabled) {
+      background-color: #ffb4ab;
+      transform: translateY(-1px);
+    }
+    .btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+    
+    /* Progress Card */
+    .progress-card {
+      background: #ffffff;
+      border: 1px solid #c3c6d7;
+      border-radius: 12px;
+      padding: 12px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      box-shadow: 0 4px 12px rgba(0, 74, 198, 0.03);
+    }
+    .progress-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+    .progress-title {
+      font-size: 9px;
+      font-weight: 700;
+      color: #434655;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .progress-value-wrapper {
+      display: flex;
+      align-items: baseline;
+      gap: 4px;
+      margin-top: 2px;
+    }
+    .progress-count {
+      font-size: 18px;
+      font-weight: 700;
+      color: #004ac6;
+    }
+    .progress-count-label {
+      font-size: 10px;
+      color: #434655;
+      font-weight: 500;
+    }
+    .status-wrapper {
+      text-align: right;
+    }
+    .status-label {
+      font-size: 9px;
+      font-weight: 700;
+      color: #434655;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .status-value {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      display: block;
+      margin-top: 2px;
+    }
+    .status-ready { color: #737686; }
+    .status-searching { color: #0053db; animation: pulse 1.5s infinite; }
+    .status-collecting { color: #004ac6; animation: pulse 1.5s infinite; }
+    .status-paused { color: #bc4800; }
+    .status-stopped { color: #ba1a1a; }
+    .status-completed { color: #2e7d32; }
+    
+    .progress-bar-bg {
+      width: 100%;
+      height: 6px;
+      background: #ededf9;
+      border-radius: 9999px;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: #004ac6;
+      border-radius: 9999px;
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+    
+    /* Footer */
+    .footer {
+      background-color: rgba(255, 255, 255, 0.9);
+      padding: 12px;
+      border-top: 1px solid #c3c6d7;
+      display: flex;
+      justify-content: center;
+    }
+    .footer-link {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #434655;
+      font-size: 11px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .footer-link:hover {
+      color: #004ac6;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+  </style>
+</head>
+<body class="custom-scrollbar">
+  
+  <!-- Header Section -->
+  <header class="header">
+    <div class="header-logo">
+      <div class="logo-badge">
+        <span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">bolt</span>
+      </div>
+      <span class="logo-text">LeadFlow Agent</span>
+    </div>
+    <span class="auth-badge" id="auth-status">
+      Loading Auth...
+    </span>
+  </header>
+
+  <!-- Form Options Section -->
+  <main class="container">
+    
+    <!-- Project Selection -->
+    <div class="form-group">
+      <label class="form-label">Active Project</label>
+      <div class="input-wrapper">
+        <select id="project-select" class="input-control">
+          <option value="">Uncategorized</option>
+        </select>
+        <span class="material-symbols-outlined select-chevron">
+          expand_more
+        </span>
+      </div>
+    </div>
+
+    <!-- Keyword -->
+    <div class="form-group">
+      <label class="form-label">Search Keyword</label>
+      <div class="input-wrapper">
+        <span class="material-symbols-outlined input-icon-left">
+          search
+        </span>
+        <input id="keyword-input" class="input-control input-control-icon-left" placeholder="e.g. Dentists" type="text" />
+      </div>
+    </div>
+
+    <!-- Location -->
+    <div class="form-group">
+      <label class="form-label">Location Area</label>
+      <div class="input-wrapper">
+        <span class="material-symbols-outlined input-icon-left">
+          location_on
+        </span>
+        <input id="location-input" class="input-control input-control-icon-left" placeholder="e.g. Boston, MA" type="text" />
+      </div>
+    </div>
+
+    <!-- Limit -->
+    <div class="form-group">
+      <label class="form-label">Max Leads Limit</label>
+      <div class="input-wrapper">
+        <span class="material-symbols-outlined input-icon-left">
+          tag
+        </span>
+        <input id="limit-input" class="input-control input-control-icon-left" value="50" min="10" max="500" type="number" />
+      </div>
+    </div>
+
+    <!-- Controls Grid -->
+    <div class="btn-grid">
+      <button id="btn-start" class="btn btn-start">
+        <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+        Start
+      </button>
+      
+      <!-- Resume button shares Start slot visually when active -->
+      <button id="btn-resume" class="btn btn-start" style="display:none;">
+        <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+        Resume
+      </button>
+      
+      <button id="btn-pause" class="btn btn-pause" disabled>
+        <span class="material-symbols-outlined">pause</span>
+        Pause
+      </button>
+      
+      <button id="btn-stop" class="btn btn-stop" disabled>
+        <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">stop</span>
+        Stop
+      </button>
+    </div>
+
+    <!-- Progress Card Section -->
+    <div class="progress-card">
+      <div class="progress-header">
+        <div>
+          <span class="progress-title">Scrape Progress</span>
+          <div class="progress-value-wrapper">
+            <span id="leads-count" class="progress-count">0</span>
+            <span class="progress-count-label">Leads Gathered</span>
+          </div>
+        </div>
+        <div class="status-wrapper">
+          <span class="status-label">Engine Status</span>
+          <span id="engine-status" class="status-value status-ready text-xs">Ready</span>
+        </div>
+      </div>
+      
+      <div class="progress-bar-bg">
+        <div id="progress-fill" class="progress-bar-fill"></div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <a href="http://localhost:3001/dashboard" target="_blank" id="lnk-dashboard" class="footer-link">
+      <span class="material-symbols-outlined text-[16px]">dashboard</span>
+      Open Dashboard
+    </a>
+  </footer>
+
+  <script src="popup.js"></script>
+</body>
+</html>
