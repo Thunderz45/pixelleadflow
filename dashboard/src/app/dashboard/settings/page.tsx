@@ -26,6 +26,7 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [authToken, setAuthToken] = useState("");
 
   useEffect(() => {
     if (!user) return;
@@ -37,6 +38,10 @@ export default function SettingsPage() {
         if (docSnap.exists()) {
           setSettings(docSnap.data() as ScraperSettings);
         }
+        
+        // Fetch JWT auth token for Puppeteer CLI runs
+        const token = await user.getIdToken();
+        setAuthToken(token);
       } catch (error) {
         console.error("Error fetching settings:", error);
       } finally {
@@ -227,6 +232,28 @@ export default function SettingsPage() {
               <div className="pb-3 border-b border-outline-variant flex justify-between">
                 <span className="text-on-surface-variant">Dashboard Server</span>
                 <span className="font-bold text-primary">Next.js Client v16</span>
+              </div>
+              <div className="pb-3 border-b border-outline-variant flex flex-col gap-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-on-surface-variant">Scraper Authorization Token</span>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(authToken);
+                      alert("Auth Token copied to clipboard!");
+                    }}
+                    type="button"
+                    className="text-xs text-primary font-bold hover:underline cursor-pointer flex items-center gap-1"
+                  >
+                    <span className="material-symbols-outlined text-[14px]">content_copy</span>
+                    Copy Token
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  readOnly
+                  value={authToken ? `${authToken.substring(0, 45)}... (Click Copy to grab full token)` : "Loading token..."}
+                  className="w-full bg-surface-container-low border border-outline-variant rounded-lg px-3 py-2 text-[11px] font-mono text-on-surface-variant focus:outline-none"
+                />
               </div>
             </div>
 

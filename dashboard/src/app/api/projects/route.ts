@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAuthToken } from "@/lib/auth-verify";
 import { db } from "@/lib/firebase";
-import { collection, query, where, getDocs, orderBy } from "firebase/firestore";
+import { collection, query, where, getDocs, orderBy, addDoc, serverTimestamp } from "firebase/firestore";
 
 export async function GET(request: NextRequest) {
   // 1. Verify User Token
@@ -31,6 +31,44 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(projects);
   } catch (error) {
     console.error("GET /api/projects error:", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  }
+}
+
+export async function POST(request: NextRequest) {
+  // 1. Verify User Token
+  const authUser = await verifyAuthToken(request);
+  if (!authUser) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    const body = await request.json();
+    const { name, description } = body;
+
+    if (!name || !name.trim()) {
+      return NextResponse.json({ error: "Project name is required" }, { status: 400 });
+    }
+
+    // 2. Add Project
+    const docRef = await addDoc(collection(db, "projects"), {
+      name: name.trim(),
+      description: description?.trim() || "",
+      userId: authUser.uid,
+      createdAt: serverTimestamp(),
+      leadsCount: 0
+    });
+
+    return NextResponse.json({ 
+      success: true, 
+      project: {
+        id: docRef.id,
+        name: name.trim(),
+        description: description?.trim() || ""
+      }
+    });
+  } catch (error) {
+    console.error("POST /api/projects error:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

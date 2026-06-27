@@ -131,6 +131,30 @@ chrome.alarms.onAlarm.addListener((alarm) => {
   }
 });
 
+// Create a new campaign project in Firestore via Dashboard API
+async function createCampaignProject(token, apiUrl, name) {
+  try {
+    const res = await fetch(`${apiUrl}/api/projects`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify({ name, description: "Created via Chrome Extension" })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      return data;
+    } else {
+      const errData = await res.json().catch(() => ({}));
+      return { success: false, error: errData.error || "Failed API status check." };
+    }
+  } catch (error) {
+    console.error("Create project fetch error:", error);
+    return { success: false, error: error.message || "Network request failed." };
+  }
+}
+
 // Handle incoming message pipelines
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   console.log("Background received msg:", message);
@@ -157,6 +181,27 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           auth: { authenticated: false, token: null, uid: null, email: null, apiUrl: detectedApiUrl },
           projects: []
         });
+      });
+    return true; // async resolution
+  }
+
+  if (message.action === "CREATE_PROJECT") {
+    syncAuthState()
+      .then((auth) => {
+        if (auth.authenticated) {
+          createCampaignProject(auth.token, auth.apiUrl, message.name)
+            .then((res) => {
+              sendResponse(res);
+            })
+            .catch((err) => {
+              sendResponse({ success: false, error: err.message });
+            });
+        } else {
+          sendResponse({ success: false, error: "Authentication session expired or invalid." });
+        }
+      })
+      .catch((err) => {
+        sendResponse({ success: false, error: "Failed to initialize auth sync." });
       });
     return true; // async resolution
   }

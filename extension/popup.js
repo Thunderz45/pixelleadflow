@@ -22,8 +22,24 @@ document.addEventListener("DOMContentLoaded", async () => {
   const btnStop = document.getElementById("btn-stop");
   const btnLogin = document.getElementById("btn-login");
   const lnkDashboard = document.getElementById("lnk-dashboard");
+  const btnAddProject = document.getElementById("btn-add-project");
 
   let token = null;
+
+  function populateProjectsDropdown(projectsList, selectedId = "") {
+    projectSelectEl.innerHTML = '<option value="">Uncategorized</option>';
+    if (projectsList && projectsList.length > 0) {
+      projectsList.forEach((p) => {
+        const opt = document.createElement("option");
+        opt.value = p.id;
+        opt.innerText = p.name;
+        if (p.id === selectedId) {
+          opt.selected = true;
+        }
+        projectSelectEl.appendChild(opt);
+      });
+    }
+  }
   let activeApiUrl = "https://pixelleadflow.vercel.app";
 
   // Login click handler: redirect to Next.js dashboard login
@@ -79,15 +95,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       });
 
       // Populate projects select dropdown
-      projectSelectEl.innerHTML = '<option value="">Uncategorized</option>';
-      if (projects && projects.length > 0) {
-        projects.forEach((p) => {
-          const opt = document.createElement("option");
-          opt.value = p.id;
-          opt.innerText = p.name;
-          projectSelectEl.appendChild(opt);
-        });
-      }
+      populateProjectsDropdown(projects);
     } else {
       // Not authenticated, prompt login screen
       loginScreen.style.display = "flex";
@@ -199,5 +207,26 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   btnStop.addEventListener("click", () => {
     chrome.runtime.sendMessage({ action: "STOP_SCRAPE" });
+  });
+
+  // Create Project click handler
+  btnAddProject.addEventListener("click", () => {
+    const name = prompt("Enter new project campaign name:");
+    if (!name || !name.trim()) return;
+
+    btnAddProject.disabled = true;
+    chrome.runtime.sendMessage({ action: "CREATE_PROJECT", name: name.trim() }, (response) => {
+      btnAddProject.disabled = false;
+      if (response && response.success && response.project) {
+        // Refresh project list and automatically select the new project!
+        chrome.runtime.sendMessage({ action: "SYNC_AUTH" }, (syncRes) => {
+          if (syncRes && syncRes.projects) {
+            populateProjectsDropdown(syncRes.projects, response.project.id);
+          }
+        });
+      } else {
+        alert(response?.error || "Failed to create campaign project. Make sure you are logged in.");
+      }
+    });
   });
 });
