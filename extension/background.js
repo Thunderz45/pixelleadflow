@@ -1,71 +1,15 @@
 // LeadFlow Service Worker
 let activeScrapeTabId = null;
-let detectedApiUrl = "http://localhost:3001";
-
-// Dynamically detect which port the dashboard is active on
-async function detectActivePort() {
-  // 1. Scan open tabs for a matching dashboard url
-  try {
-    const tabs = await chrome.tabs.query({});
-    for (const tab of tabs) {
-      if (tab.url) {
-        try {
-          const urlObj = new URL(tab.url);
-          if ((urlObj.hostname === "localhost" || urlObj.hostname === "127.0.0.1") && 
-              (urlObj.port === "3001")) {
-            return urlObj.origin;
-          }
-          if (urlObj.hostname.endsWith(".vercel.app")) {
-            return urlObj.origin;
-          }
-        } catch (e) {}
-      }
-    }
-  } catch (err) {
-    console.warn("Could not query browser tabs:", err);
-  }
-  return null;
-}
+const VERCEL_URL = "https://pixelleadflow.vercel.app";
+let detectedApiUrl = VERCEL_URL;
 
 // Synchronize authentication from dashboard cookies
 async function syncAuthState() {
   try {
-    let targetUrl = await detectActivePort();
-    let cookie = null;
-
-    if (targetUrl) {
-      cookie = await chrome.cookies.get({
-        url: targetUrl,
-        name: "leadflow_auth_token"
-      });
-    }
-
-    // If no matching cookie on active tab origin, scan loopbacks and vercel domains directly
-    if (!cookie || !cookie.value) {
-      const candidates = [
-        "http://localhost:3001",
-        "http://127.0.0.1:3001",
-        "https://pixelleadflow.vercel.app"
-      ];
-      
-      for (const origin of candidates) {
-        if (origin === targetUrl) continue;
-        try {
-          const testCookie = await chrome.cookies.get({
-            url: origin,
-            name: "leadflow_auth_token"
-          });
-          if (testCookie && testCookie.value) {
-            cookie = testCookie;
-            targetUrl = origin;
-            break;
-          }
-        } catch (e) {}
-      }
-    }
-
-    // Default fallback
-    detectedApiUrl = targetUrl || "http://localhost:3001";
+    const cookie = await chrome.cookies.get({
+      url: VERCEL_URL,
+      name: "leadflow_auth_token"
+    });
 
     if (cookie && cookie.value) {
       const token = cookie.value;
@@ -77,11 +21,11 @@ async function syncAuthState() {
         token: token,
         uid: payloadDecoded.user_id || payloadDecoded.sub,
         email: payloadDecoded.email || "Sync Active",
-        apiUrl: detectedApiUrl
+        apiUrl: VERCEL_URL
       };
 
       await chrome.storage.local.set({ authState });
-      console.log("LeadFlow Auth synced email:", authState.email, "Target API:", detectedApiUrl);
+      console.log("LeadFlow Auth synced email:", authState.email, "Target API:", VERCEL_URL);
       return authState;
     } else {
       const authState = { 
@@ -89,15 +33,15 @@ async function syncAuthState() {
         token: null, 
         uid: null, 
         email: null,
-        apiUrl: detectedApiUrl 
+        apiUrl: VERCEL_URL 
       };
       await chrome.storage.local.set({ authState });
-      console.log("LeadFlow Auth: Not authenticated for host:", detectedApiUrl);
+      console.log("LeadFlow Auth: Not authenticated for host:", VERCEL_URL);
       return authState;
     }
   } catch (error) {
     console.error("Auth sync failure:", error);
-    return { authenticated: false, token: null, uid: null, email: null, apiUrl: detectedApiUrl };
+    return { authenticated: false, token: null, uid: null, email: null, apiUrl: VERCEL_URL };
   }
 }
 
@@ -219,7 +163,7 @@ async function syncProgressToDashboard(state) {
     const { authState } = await chrome.storage.local.get("authState");
     if (!authState || !authState.token) return;
 
-    const url = authState.apiUrl || "http://localhost:3001";
+    const url = authState.apiUrl || VERCEL_URL;
 
     await fetch(`${url}/api/scrape/history`, {
       method: "POST",

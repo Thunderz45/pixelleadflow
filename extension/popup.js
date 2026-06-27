@@ -20,18 +20,15 @@ document.addEventListener("DOMContentLoaded", async () => {
   const btnPause = document.getElementById("btn-pause");
   const btnResume = document.getElementById("btn-resume");
   const btnStop = document.getElementById("btn-stop");
-  const btnLogin = document.getElementById("btn-login");
+  const btnLoginGoogle = document.getElementById("btn-login-google");
   const lnkDashboard = document.getElementById("lnk-dashboard");
 
   let token = null;
-  let activeApiUrl = "http://localhost:3001";
+  let activeApiUrl = "https://pixelleadflow.vercel.app";
 
   // Login click handler: redirect to Next.js dashboard login
-  btnLogin.addEventListener("click", () => {
-    chrome.storage.local.get("authState", (data) => {
-      const url = (data.authState && data.authState.apiUrl) || activeApiUrl;
-      chrome.tabs.create({ url });
-    });
+  btnLoginGoogle.addEventListener("click", () => {
+    chrome.tabs.create({ url: activeApiUrl });
   });
 
   // Initialize and Sync Auth Session

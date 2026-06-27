@@ -246,7 +246,7 @@ async function saveLeadToDatabase(lead) {
   try {
     const { authState } = await chrome.storage.local.get("authState");
     if (!authState || !authState.token) return;
-    const url = authState.apiUrl || "http://localhost:3001";
+    const url = authState.apiUrl || "https://pixelleadflow.vercel.app";
     await fetch(`${url}/api/leads/save`, {
       method: "POST",
       headers: {
