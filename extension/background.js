@@ -207,27 +207,65 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   // Routing controls from Popup to Content Script
-  if (["START_SCRAPE", "PAUSE_SCRAPE", "RESUME_SCRAPE", "STOP_SCRAPE"].includes(message.action)) {
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (tabs.length === 0) {
-        sendResponse({ error: "No active window tabs found." });
-        return;
-      }
-      const activeTab = tabs[0];
-      activeScrapeTabId = activeTab.id;
+  if (message.action === "START_SCRAPE") {
+    const { keyword, location } = message;
+    const searchUrl = `https://www.google.com/maps/search/${encodeURIComponent(keyword + " " + location)}`;
 
-      // Ensure we are on Google Maps
-      if (!activeTab.url || !activeTab.url.includes("google.") || !activeTab.url.includes("/maps")) {
-        sendResponse({ error: "Please open Google Maps page in active tab." });
-        return;
-      }
+    // Open Google Maps search directly in a separate MINIMIZED background window
+    chrome.windows.create({
+      url: searchUrl,
+      type: "normal",
+      state: "minimized"
+    }, (newWindow) => {
+      if (newWindow && newWindow.tabs && newWindow.tabs.length > 0) {
+        const newTab = newWindow.tabs[0];
+        activeScrapeTabId = newTab.id;
 
-      // Propagate the action down to Content Script
-      chrome.tabs.sendMessage(activeTab.id, message, (response) => {
-        sendResponse(response || { success: true });
-      });
+        // Listen for the tab load completion, then trigger the scraping loop
+        chrome.tabs.onUpdated.addListener(function listener(tabId, changeInfo) {
+          if (tabId === activeScrapeTabId && changeInfo.status === "complete") {
+            chrome.tabs.onUpdated.removeListener(listener);
+
+            // Persist search parameters to storage for redirect/reload recovery
+            chrome.storage.local.set({
+              engineState: {
+                status: "searching",
+                leadsCount: 0,
+                keyword,
+                location,
+                maxResults: message.maxResults,
+                projectId: message.projectId
+              }
+            }, () => {
+              chrome.tabs.sendMessage(activeScrapeTabId, message, (res) => {
+                sendResponse(res || { success: true, background: true });
+              });
+            });
+          }
+        });
+      } else {
+        sendResponse({ error: "Failed to open background automation window." });
+      }
     });
-    return true;
+    return true; // async sendResponse
+  }
+
+  if (["PAUSE_SCRAPE", "RESUME_SCRAPE", "STOP_SCRAPE"].includes(message.action)) {
+    if (activeScrapeTabId) {
+      if (message.action === "STOP_SCRAPE") {
+        // Close the background automation tab/window when stopped!
+        chrome.tabs.remove(activeScrapeTabId).catch(() => {});
+        activeScrapeTabId = null;
+      } else {
+        // Send pause/resume down to the background tab
+        chrome.tabs.sendMessage(activeScrapeTabId, message, (response) => {
+          sendResponse(response || { success: true });
+        });
+        return true;
+      }
+    }
+    sendResponse({ success: true });
+    return;
   }
 
   // Progress update from Content Script
@@ -239,6 +277,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       action: "UPDATE_POPUP_STATE",
       state: message.state
     }).catch(() => {/* popup might be closed */});
+
+    // Automatically close the minimized background tab when finished or stopped
+    if (["completed", "stopped", "ready"].includes(message.state.status.toLowerCase())) {
+      if (activeScrapeTabId) {
+        chrome.tabs.remove(activeScrapeTabId).catch(() => {});
+        activeScrapeTabId = null;
+      }
+    }
 
     // Update active history run record in Firebase
     syncProgressToDashboard(message.state);
