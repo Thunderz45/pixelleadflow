@@ -4,9 +4,6 @@ let detectedApiUrl = "http://localhost:3001";
 
 // Dynamically detect which port the dashboard is active on
 async function detectActivePort() {
-  const ports = ["3001"];
-  const hosts = ["localhost", "127.0.0.1"];
-  
   // 1. Scan open tabs for a matching dashboard url
   try {
     const tabs = await chrome.tabs.query({});
@@ -27,45 +24,48 @@ async function detectActivePort() {
   } catch (err) {
     console.warn("Could not query browser tabs:", err);
   }
-  
-  // 2. Fallback: Quick ping check to see which port responds
-  for (const host of hosts) {
-    for (const port of ports) {
-      const testUrl = `http://${host}:${port}`;
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 600);
-        // Make a head request to projects API to verify if the server is listening
-        const res = await fetch(`${testUrl}/api/projects`, { 
-          method: "GET", // Use GET in case HEAD is blocked
-          headers: { "Authorization": "Bearer test-ping" }, // Dummy token to trigger auth validation quickly
-          signal: controller.signal 
-        });
-        clearTimeout(timeoutId);
-        
-        // If the server responded with anything (even 401 or 500), it is our active host!
-        if (res.status === 401 || res.status === 200 || res.status === 500) {
-          return testUrl;
-        }
-      } catch (err) {
-        // Port is closed / not active
-      }
-    }
-  }
-  
-  return "http://localhost:3001";
+  return null;
 }
 
 // Synchronize authentication from dashboard cookies
 async function syncAuthState() {
   try {
-    // Detect active loopback address/port
-    detectedApiUrl = await detectActivePort();
+    let targetUrl = await detectActivePort();
+    let cookie = null;
 
-    const cookie = await chrome.cookies.get({
-      url: detectedApiUrl,
-      name: "leadflow_auth_token"
-    });
+    if (targetUrl) {
+      cookie = await chrome.cookies.get({
+        url: targetUrl,
+        name: "leadflow_auth_token"
+      });
+    }
+
+    // If no matching cookie on active tab origin, scan loopbacks and vercel domains directly
+    if (!cookie || !cookie.value) {
+      const candidates = [
+        "http://localhost:3001",
+        "http://127.0.0.1:3001",
+        "https://pixelleadflow.vercel.app"
+      ];
+      
+      for (const origin of candidates) {
+        if (origin === targetUrl) continue;
+        try {
+          const testCookie = await chrome.cookies.get({
+            url: origin,
+            name: "leadflow_auth_token"
+          });
+          if (testCookie && testCookie.value) {
+            cookie = testCookie;
+            targetUrl = origin;
+            break;
+          }
+        } catch (e) {}
+      }
+    }
+
+    // Default fallback
+    detectedApiUrl = targetUrl || "http://localhost:3001";
 
     if (cookie && cookie.value) {
       const token = cookie.value;
