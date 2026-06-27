@@ -155,9 +155,55 @@ async function createCampaignProject(token, apiUrl, name) {
   }
 }
 
+// Send lead details to Dashboard API (Executed in Background Service Worker to bypass CORS restrictions)
+async function postLeadRecord(token, apiUrl, lead) {
+  try {
+    const res = await fetch(`${apiUrl}/api/leads/save`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify(lead)
+    });
+    if (res.ok) {
+      const data = await res.json();
+      return data;
+    } else {
+      const errText = await res.text();
+      console.error("Leads save API response failed:", errText);
+      return { success: false, error: errText };
+    }
+  } catch (error) {
+    console.error("Leads save fetch request failed:", error);
+    return { success: false, error: error.message };
+  }
+}
+
 // Handle incoming message pipelines
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   console.log("Background received msg:", message);
+
+  if (message.action === "SAVE_LEAD") {
+    syncAuthState()
+      .then((auth) => {
+        if (auth.authenticated) {
+          postLeadRecord(auth.token, auth.apiUrl, message.lead)
+            .then((res) => {
+              sendResponse(res);
+            })
+            .catch((err) => {
+              sendResponse({ success: false, error: err.message });
+            });
+        } else {
+          sendResponse({ success: false, error: "Auth session expired. Please log in." });
+        }
+      })
+      .catch((err) => {
+        sendResponse({ success: false, error: "Failed to sync credentials." });
+      });
+    return true; // async resolution
+  }
 
   if (message.action === "SYNC_AUTH") {
     syncAuthState()

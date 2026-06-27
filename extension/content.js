@@ -243,23 +243,13 @@ function extractDomain(url) {
   }
 }
 
-// Post lead details to Next.js API router
+// Send lead details to background script to post to Next.js API (bypassing content script CORS blocks)
 async function saveLeadToDatabase(lead) {
-  try {
-    const { authState } = await chrome.storage.local.get("authState");
-    if (!authState || !authState.token) return;
-    const url = authState.apiUrl || "https://pixelleadflow.vercel.app";
-    await fetch(`${url}/api/leads/save`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${authState.token}`
-      },
-      body: JSON.stringify(lead)
+  return new Promise((resolve) => {
+    chrome.runtime.sendMessage({ action: "SAVE_LEAD", lead }, (response) => {
+      resolve(response || { success: false });
     });
-  } catch (err) {
-    console.error("Failed to post lead data:", err);
-  }
+  });
 }
 
 function reportState(status) {
