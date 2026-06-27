@@ -32,17 +32,19 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     isRunning = true;
     isPaused = false;
 
-    // Check if we are already on the correct search page
-    const expectedSearchUrl = `https://www.google.com/maps/search/${encodeURIComponent(keyword + " " + location)}`;
-    if (!window.location.href.includes(encodeURIComponent(keyword))) {
-      reportState("searching");
-      window.location.href = expectedSearchUrl;
-      sendResponse({ success: true, redirecting: true });
-    } else {
-      sendResponse({ success: true });
-      setTimeout(runScrapeLoop, 3000); // Wait for page stability
-    }
-    return;
+    // Save running state before page redirects and reloads
+    chrome.storage.local.set({ engineState: scrapeState }, () => {
+      const expectedSearchUrl = `https://www.google.com/maps/search/${encodeURIComponent(keyword + " " + location)}`;
+      if (!window.location.href.includes(encodeURIComponent(keyword))) {
+        reportState("searching");
+        window.location.href = expectedSearchUrl;
+        sendResponse({ success: true, redirecting: true });
+      } else {
+        sendResponse({ success: true });
+        setTimeout(runScrapeLoop, 3000); // Wait for page stability
+      }
+    });
+    return true;
   }
 
   if (message.action === "PAUSE_SCRAPE") {
@@ -271,3 +273,20 @@ function reportState(status) {
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
+
+// Auto-resume scraping if redirected
+chrome.storage.local.get("engineState", (data) => {
+  if (data && data.engineState) {
+    const state = data.engineState;
+    if (state.status === "searching" || state.status === "collecting") {
+      console.log("LeadFlow: Auto-resuming redirect scrape run...", state);
+      scrapeState = state;
+      collectedLeads.clear();
+      isRunning = true;
+      isPaused = false;
+      
+      // Delay to let the map listings fully render
+      setTimeout(runScrapeLoop, 4000);
+    }
+  }
+});
