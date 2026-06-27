@@ -23,6 +23,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const btnLogin = document.getElementById("btn-login");
   const lnkDashboard = document.getElementById("lnk-dashboard");
   const btnAddProject = document.getElementById("btn-add-project");
+  const btnViewLeads = document.getElementById("btn-view-leads");
 
   let token = null;
 
@@ -228,5 +229,14 @@ document.addEventListener("DOMContentLoaded", async () => {
         alert(response?.error || "Failed to create campaign project. Make sure you are logged in.");
       }
     });
+  });
+
+  // View Saved Leads click handler: redirect to dashboard filtered project view
+  btnViewLeads.addEventListener("click", () => {
+    const projectId = projectSelectEl.value; // gets document ID, e.g. "zT81oB7a3d"
+    const targetUrl = projectId 
+      ? `${activeApiUrl}/dashboard/saved?project=${projectId}`
+      : `${activeApiUrl}/dashboard/saved`;
+    chrome.tabs.create({ url: targetUrl });
   });
 });

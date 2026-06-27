@@ -94,6 +94,17 @@ export default function SavedBusinessesPage() {
     loadFilterData();
   }, [user]);
 
+  // Read URL search parameter for direct redirect campaign filtering
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const proj = params.get("project");
+      if (proj) {
+        setSelectedProject(proj);
+      }
+    }
+  }, []);
+
   const handleDeleteLead = async (id: string) => {
     if (!confirm("Remove this lead from your campaign list?")) return;
     try {

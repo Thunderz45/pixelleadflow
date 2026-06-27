@@ -31,7 +31,7 @@ async function runScraper() {
   console.log(`Query: [${KEYWORD}] in [${LOCATION}] (Limit: ${MAX_RESULTS} leads)`);
 
   const browser = await puppeteer.launch({
-    headless: false, // visible for local validation
+    headless: true, // run in background
     args: ["--no-sandbox", "--disable-setuid-sandbox", "--window-size=1280,800"]
   });
 
