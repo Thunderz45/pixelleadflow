@@ -54,7 +54,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const { auth, projects } = response;
     if (auth && auth.authenticated) {
       token = auth.token;
-      activeApiUrl = auth.apiUrl || "http://localhost:3001";
+      activeApiUrl = auth.apiUrl || "https://pixelleadflow.vercel.app";
       
       authStatusEl.innerText = auth.email;
       authStatusEl.title = auth.email;
@@ -69,6 +69,15 @@ document.addEventListener("DOMContentLoaded", async () => {
       loginScreen.style.display = "none";
       appScreen.style.display = "flex";
       
+      // Force UI state refresh with the token now assigned
+      chrome.storage.local.get("engineState", (data) => {
+        if (data.engineState) {
+          updateUIState(data.engineState);
+        } else {
+          updateUIState({ status: "ready", leadsCount: 0 });
+        }
+      });
+
       // Populate projects select dropdown
       projectSelectEl.innerHTML = '<option value="">Uncategorized</option>';
       if (projects && projects.length > 0) {
