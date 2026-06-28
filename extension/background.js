@@ -1,12 +1,15 @@
 // LeadFlow Service Worker
 let activeScrapeTabId = null;
-const VERCEL_URL = "https://pixelleadflow.vercel.app";
+const VERCEL_URL = "https://leadflow.pixelstudiox.in";
 let detectedApiUrl = VERCEL_URL;
 
 // Fallback: Query tab local storage directly if cookie reading is restricted
 async function getAuthTokenFromLocalStorage() {
   try {
-    const tabs = await chrome.tabs.query({ url: "*://pixelleadflow.vercel.app/*" });
+    let tabs = await chrome.tabs.query({ url: "*://leadflow.pixelstudiox.in/*" });
+    if (!tabs || tabs.length === 0) {
+      tabs = await chrome.tabs.query({ url: "*://pixelleadflow.vercel.app/*" });
+    }
     if (tabs && tabs.length > 0) {
       // Use scripting API to grab localStorage variables from active tab
       const results = await chrome.scripting.executeScript({

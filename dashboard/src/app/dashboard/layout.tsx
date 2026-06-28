@@ -42,6 +42,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const utilityItems = [
     { name: "Settings", href: "/dashboard/settings", icon: "settings" },
     { name: "Profile", href: "/dashboard/profile", icon: "account_circle" },
+    { name: "Privacy Policy", href: "/dashboard/privacy", icon: "policy" },
   ];
 
   const handleLogout = async () => {

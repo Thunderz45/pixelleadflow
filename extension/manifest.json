@@ -12,6 +12,7 @@
   ],
   "host_permissions": [
     "https://*.google.com/maps/*",
+    "https://leadflow.pixelstudiox.in/*",
     "https://pixelleadflow.vercel.app/*",
     "https://pixel-leadflow.firebaseapp.com/*"
   ],

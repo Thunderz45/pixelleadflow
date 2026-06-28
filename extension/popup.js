@@ -41,7 +41,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       });
     }
   }
-  let activeApiUrl = "https://pixelleadflow.vercel.app";
+  let activeApiUrl = "https://leadflow.pixelstudiox.in";
 
   // Login click handler: redirect to Next.js dashboard login
   btnLogin.addEventListener("click", () => {
@@ -71,7 +71,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const { auth, projects } = response;
     if (auth && auth.authenticated) {
       token = auth.token;
-      activeApiUrl = auth.apiUrl || "https://pixelleadflow.vercel.app";
+      activeApiUrl = auth.apiUrl || "https://leadflow.pixelstudiox.in";
       
       authStatusEl.innerText = auth.email;
       authStatusEl.title = auth.email;
