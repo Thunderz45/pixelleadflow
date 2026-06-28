@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "LeadFlow Agent",
   "version": "1.0.0",
-  "description": "Official companion extension for Pixel Lead Flow. Enables authenticated users to collect, organize, and synchronize business lead information with their Pixel Lead Flow dashboard.",
+  "description": "Official extension for Pixel Lead Flow to collect and organize business lead information",
   "permissions": [
     "storage",
     "cookies",
