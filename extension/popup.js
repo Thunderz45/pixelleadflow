@@ -86,17 +86,19 @@ document.addEventListener("DOMContentLoaded", async () => {
       loginScreen.style.display = "none";
       appScreen.style.display = "flex";
       
-      // Force UI state refresh with the token now assigned
+      // Force UI state refresh and populate dropdown with the saved projectId from engineState
       chrome.storage.local.get("engineState", (data) => {
+        const savedProjectId = (data.engineState && data.engineState.projectId) || "";
+        
+        // Populate projects select dropdown and select the active/saved project
+        populateProjectsDropdown(projects, savedProjectId);
+
         if (data.engineState) {
           updateUIState(data.engineState);
         } else {
           updateUIState({ status: "ready", leadsCount: 0 });
         }
       });
-
-      // Populate projects select dropdown
-      populateProjectsDropdown(projects);
     } else {
       // Not authenticated, prompt login screen
       loginScreen.style.display = "flex";
@@ -228,6 +230,16 @@ document.addEventListener("DOMContentLoaded", async () => {
       } else {
         alert(response?.error || "Failed to create campaign project. Make sure you are logged in.");
       }
+    });
+  });
+
+  // Save selected project to engineState local storage when selection changes
+  projectSelectEl.addEventListener("change", () => {
+    const projectId = projectSelectEl.value;
+    chrome.storage.local.get("engineState", (data) => {
+      const state = data.engineState || { status: "ready", leadsCount: 0 };
+      state.projectId = projectId;
+      chrome.storage.local.set({ engineState: state });
     });
   });
 

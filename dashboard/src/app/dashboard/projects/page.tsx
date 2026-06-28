@@ -168,7 +168,7 @@ export default function ProjectsPage() {
                       Delete
                     </button>
                     <span className="text-outline-variant">|</span>
-                    <Link href="/dashboard/saved" className="text-primary hover:underline">
+                    <Link href={`/dashboard/saved?project=${project.id}`} className="text-primary hover:underline">
                       Leads
                     </Link>
                   </div>

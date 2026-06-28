@@ -76,7 +76,7 @@ export default function SavedBusinessesPage() {
           address: data.address || "N/A",
           rating: data.rating || 0,
           reviewsCount: data.reviewsCount || 0,
-          projectId: data.projectId || "",
+          projectId: matchingProj ? (data.projectId || "") : "",
           projectName: matchingProj ? matchingProj.name : "Uncategorized",
           createdAt: data.createdAt?.toDate() || new Date(),
           mapsUrl: data.mapsUrl || "",
@@ -248,6 +248,7 @@ export default function SavedBusinessesPage() {
               className="py-1.5 px-3 border border-outline-variant rounded-lg text-xs outline-none bg-white cursor-pointer"
             >
               <option value="all">All Projects</option>
+              <option value="">Uncategorized</option>
               {projects.map((p) => (
                 <option key={p.id} value={p.id}>{p.name}</option>
               ))}
