@@ -68,7 +68,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       return;
     }
 
-    const { auth, projects } = response;
+    const { auth, projects, serverState } = response;
     if (auth && auth.authenticated) {
       token = auth.token;
       activeApiUrl = auth.apiUrl || "https://leadflow.pixelstudiox.in";
@@ -86,18 +86,17 @@ document.addEventListener("DOMContentLoaded", async () => {
       loginScreen.style.display = "none";
       appScreen.style.display = "flex";
       
-      // Force UI state refresh and populate dropdown with the saved projectId from engineState
+      // Force UI state refresh and populate dropdown with the saved projectId from database
       chrome.storage.local.get("engineState", (data) => {
-        const savedProjectId = (data.engineState && data.engineState.projectId) || "";
+        const localState = data.engineState || {};
+        // Database state is the primary source of truth, fallback to local cache
+        const activeState = (serverState && serverState.status !== "ready") ? serverState : (localState.status ? localState : { status: "ready", leadsCount: 0 });
+        
+        const savedProjectId = activeState.projectId || "";
         
         // Populate projects select dropdown and select the active/saved project
         populateProjectsDropdown(projects, savedProjectId);
-
-        if (data.engineState) {
-          updateUIState(data.engineState);
-        } else {
-          updateUIState({ status: "ready", leadsCount: 0 });
-        }
+        updateUIState(activeState);
       });
     } else {
       // Not authenticated, prompt login screen
@@ -106,8 +105,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  // Restore current storage running states
-  chrome.storage.local.get(["engineState", "authState"], (data) => {
+  // Restore current storage running states as a quick visual placeholder
+  chrome.storage.local.get(["engineState"], (data) => {
     if (data.engineState) {
       updateUIState(data.engineState);
     }

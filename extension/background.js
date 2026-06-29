@@ -3,39 +3,10 @@ let activeScrapeTabId = null;
 const VERCEL_URL = "https://leadflow.pixelstudiox.in";
 let detectedApiUrl = VERCEL_URL;
 
-// Fallback: Query tab local storage directly if cookie reading is restricted
-async function getAuthTokenFromLocalStorage() {
-  try {
-    let tabs = await chrome.tabs.query({ url: "*://leadflow.pixelstudiox.in/*" });
-    if (!tabs || tabs.length === 0) {
-      tabs = await chrome.tabs.query({ url: "*://pixelleadflow.vercel.app/*" });
-    }
-    if (tabs && tabs.length > 0) {
-      // Use scripting API to grab localStorage variables from active tab
-      const results = await chrome.scripting.executeScript({
-        target: { tabId: tabs[0].id },
-        func: () => {
-          return {
-            token: localStorage.getItem("leadflow_auth_token"),
-            email: localStorage.getItem("leadflow_user_email"),
-            uid: localStorage.getItem("leadflow_user_id")
-          };
-        }
-      });
-      if (results && results[0] && results[0].result) {
-        return results[0].result;
-      }
-    }
-  } catch (err) {
-    console.warn("Could not read auth from tab localStorage:", err);
-  }
-  return null;
-}
-
 // Synchronize authentication from dashboard cookies
 async function syncAuthState() {
   try {
-    // 1. Try reading the cookie (port/scheme checked)
+    // Try reading the cookie (port/scheme checked)
     const cookie = await chrome.cookies.get({
       url: VERCEL_URL + "/",
       name: "leadflow_auth_token"
@@ -50,15 +21,6 @@ async function syncAuthState() {
       const payloadDecoded = JSON.parse(atob(payloadBase64.replace(/-/g, '+').replace(/_/g, '/')));
       email = payloadDecoded.email;
       uid = payloadDecoded.user_id || payloadDecoded.sub;
-    } else {
-      // 2. Fallback: Query tab localStorage directly
-      const tabData = await getAuthTokenFromLocalStorage();
-      if (tabData && tabData.token) {
-        token = tabData.token;
-        email = tabData.email;
-        uid = tabData.uid;
-        console.log("LeadFlow Auth: Successfully synchronized credentials from tab localStorage.");
-      }
     }
 
     if (token) {
@@ -99,11 +61,47 @@ async function fetchCampaignProjects(token, apiUrl) {
     });
     if (res.ok) {
       const projects = await res.json();
-      await chrome.storage.local.set({ projects });
       return projects;
     }
   } catch (error) {
     console.error("Could not load projects from API:", error);
+  }
+  return null;
+}
+
+// Fetch active scraper configurations from Dashboard API
+async function fetchScraperSettings(token, apiUrl) {
+  try {
+    const res = await fetch(`${apiUrl}/api/settings`, {
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+    if (res.ok) {
+      const settings = await res.json();
+      return settings;
+    }
+  } catch (error) {
+    console.error("Could not load settings from API:", error);
+  }
+  return {
+    defaultMaxResults: 50,
+    autoScrollDelay: 1000,
+    retryAttempts: 3,
+    skipDuplicates: true
+  };
+}
+
+// Fetch active scrape run state from Dashboard API
+async function fetchLatestScrapeState(token, apiUrl) {
+  try {
+    const res = await fetch(`${apiUrl}/api/scrape/history`, {
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+    if (res.ok) {
+      const state = await res.json();
+      return state;
+    }
+  } catch (error) {
+    console.error("Could not load scrape history from API:", error);
   }
   return null;
 }
@@ -212,23 +210,27 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     syncAuthState()
       .then((auth) => {
         if (auth.authenticated) {
-          fetchCampaignProjects(auth.token, auth.apiUrl)
-            .then((projs) => {
-              sendResponse({ auth, projects: projs || [] });
+          Promise.all([
+            fetchCampaignProjects(auth.token, auth.apiUrl),
+            fetchLatestScrapeState(auth.token, auth.apiUrl)
+          ])
+            .then(([projs, serverState]) => {
+              sendResponse({ auth, projects: projs || [], serverState });
             })
             .catch((err) => {
-              console.error("Projects fetch failure inside messaging:", err);
-              sendResponse({ auth, projects: [] });
+              console.error("SYNC_AUTH fetch failure:", err);
+              sendResponse({ auth, projects: [], serverState: null });
             });
         } else {
-          sendResponse({ auth, projects: [] });
+          sendResponse({ auth, projects: [], serverState: null });
         }
       })
       .catch((err) => {
         console.error("Auth sync failure inside messaging:", err);
         sendResponse({
           auth: { authenticated: false, token: null, uid: null, email: null, apiUrl: detectedApiUrl },
-          projects: []
+          projects: [],
+          serverState: null
         });
       });
     return true; // async resolution
@@ -260,41 +262,56 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     const { keyword, location } = message;
     const searchUrl = `https://www.google.com/maps/search/${encodeURIComponent(keyword + " " + location)}`;
 
-    // Open Google Maps search directly in a separate MINIMIZED background window
-    chrome.windows.create({
-      url: searchUrl,
-      type: "normal",
-      state: "minimized"
-    }, (newWindow) => {
-      if (newWindow && newWindow.tabs && newWindow.tabs.length > 0) {
-        const newTab = newWindow.tabs[0];
-        activeScrapeTabId = newTab.id;
-
-        // Listen for the tab load completion, then trigger the scraping loop
-        chrome.tabs.onUpdated.addListener(function listener(tabId, changeInfo) {
-          if (tabId === activeScrapeTabId && changeInfo.status === "complete") {
-            chrome.tabs.onUpdated.removeListener(listener);
-
-            // Persist search parameters to storage for redirect/reload recovery
-            chrome.storage.local.set({
-              engineState: {
-                status: "searching",
-                leadsCount: 0,
-                keyword,
-                location,
-                maxResults: message.maxResults,
-                projectId: message.projectId
-              }
-            }, () => {
-              chrome.tabs.sendMessage(activeScrapeTabId, message, (res) => {
-                sendResponse(res || { success: true, background: true });
-              });
-            });
-          }
-        });
-      } else {
-        sendResponse({ error: "Failed to open background automation window." });
+    syncAuthState().then(async (auth) => {
+      let dbSettings = { autoScrollDelay: 1000, retryAttempts: 3, skipDuplicates: true };
+      if (auth.authenticated) {
+        const fetched = await fetchScraperSettings(auth.token, auth.apiUrl);
+        if (fetched) {
+          dbSettings = fetched;
+        }
       }
+
+      // Merge user settings into the message sent to content.js
+      const mergedMessage = {
+        ...message,
+        settings: dbSettings
+      };
+
+      chrome.windows.create({
+        url: searchUrl,
+        type: "normal",
+        state: "minimized"
+      }, (newWindow) => {
+        if (newWindow && newWindow.tabs && newWindow.tabs.length > 0) {
+          const newTab = newWindow.tabs[0];
+          activeScrapeTabId = newTab.id;
+
+          chrome.tabs.onUpdated.addListener(function listener(tabId, changeInfo) {
+            if (tabId === activeScrapeTabId && changeInfo.status === "complete") {
+              chrome.tabs.onUpdated.removeListener(listener);
+
+              // Persist search parameters to storage for redirect/reload recovery
+              chrome.storage.local.set({
+                engineState: {
+                  status: "searching",
+                  leadsCount: 0,
+                  keyword,
+                  location,
+                  maxResults: message.maxResults,
+                  projectId: message.projectId,
+                  settings: dbSettings
+                }
+              }, () => {
+                chrome.tabs.sendMessage(activeScrapeTabId, mergedMessage, (res) => {
+                  sendResponse(res || { success: true, background: true });
+                });
+              });
+            }
+          });
+        } else {
+          sendResponse({ error: "Failed to open background automation window." });
+        }
+      });
     });
     return true; // async sendResponse
   }

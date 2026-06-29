@@ -2,8 +2,6 @@
 
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/context/auth-context";
-import { db } from "@/lib/firebase";
-import { doc, getDoc, setDoc } from "firebase/firestore";
 
 interface ScraperSettings {
   defaultMaxResults: number;
@@ -33,15 +31,19 @@ export default function SettingsPage() {
     const fetchSettings = async () => {
       try {
         setLoading(true);
-        const docRef = doc(db, "settings", user.uid);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          setSettings(docSnap.data() as ScraperSettings);
-        }
-        
-        // Fetch JWT auth token for Puppeteer CLI runs
         const token = await user.getIdToken();
         setAuthToken(token);
+
+        const res = await fetch("/api/settings", {
+          headers: {
+            "Authorization": `Bearer ${token}`
+          }
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          setSettings(data as ScraperSettings);
+        }
       } catch (error) {
         console.error("Error fetching settings:", error);
       } finally {
@@ -57,10 +59,22 @@ export default function SettingsPage() {
     try {
       setSaving(true);
       setSuccess(false);
-      const docRef = doc(db, "settings", user.uid);
-      await setDoc(docRef, settings, { merge: true });
-      setSuccess(true);
-      setTimeout(() => setSuccess(false), 3000);
+      const token = await user.getIdToken();
+      const res = await fetch("/api/settings", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(settings)
+      });
+
+      if (res.ok) {
+        setSuccess(true);
+        setTimeout(() => setSuccess(false), 3000);
+      } else {
+        throw new Error("Failed to save settings on server");
+      }
     } catch (error) {
       console.error("Error saving settings:", error);
       alert("Could not update configurations.");

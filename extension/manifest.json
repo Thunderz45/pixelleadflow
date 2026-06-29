@@ -6,12 +6,11 @@
   "permissions": [
     "storage",
     "cookies",
-    "alarms",
-    "tabs",
-    "scripting"
+    "alarms"
   ],
   "host_permissions": [
-    "https://*.google.com/maps/*",
+    "https://www.google.com/maps/*",
+    "https://www.google.co.in/maps/*",
     "https://leadflow.pixelstudiox.in/*",
     "https://pixelleadflow.vercel.app/*",
     "https://pixel-leadflow.firebaseapp.com/*"

@@ -78,3 +78,37 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
+
+export async function GET(request: NextRequest) {
+  const authUser = await verifyAuthToken(request);
+  if (!authUser) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    const q = query(
+      collection(db, "history"),
+      where("userId", "==", authUser.uid),
+      orderBy("timestamp", "desc"),
+      limit(1)
+    );
+
+    const snap = await getDocs(q);
+    if (!snap.empty) {
+      const docData = snap.docs[0].data();
+      return NextResponse.json({
+        id: snap.docs[0].id,
+        keyword: docData.keyword || "",
+        location: docData.location || "",
+        projectId: docData.projectId || "",
+        maxResults: docData.maxResults || 50,
+        leadsCount: docData.resultsCount || 0,
+        status: docData.status || "ready"
+      });
+    }
+    return NextResponse.json({ status: "ready", leadsCount: 0 });
+  } catch (error: any) {
+    console.error("GET /api/scrape/history error:", error);
+    return NextResponse.json({ error: error.message || "Internal Server Error" }, { status: 500 });
+  }
+}

@@ -17,7 +17,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   console.log("Content script received action:", message.action);
 
   if (message.action === "START_SCRAPE") {
-    const { keyword, location, maxResults, projectId } = message;
+    const { keyword, location, maxResults, projectId, settings } = message;
     
     scrapeState = {
       status: "searching",
@@ -25,7 +25,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       keyword,
       location,
       maxResults,
-      projectId
+      projectId,
+      settings: settings || { autoScrollDelay: 1000, retryAttempts: 3, skipDuplicates: true }
     };
 
     collectedLeads.clear();
@@ -97,6 +98,9 @@ async function runScrapeLoop() {
     let previousScrollHeight = feed.scrollHeight;
     let scrollAttempts = 0;
 
+    const delayMs = (scrapeState.settings && scrapeState.settings.autoScrollDelay) || 1000;
+    const retryMax = (scrapeState.settings && scrapeState.settings.retryAttempts) || 3;
+
     while (isRunning && !isPaused && collectedLeads.size < scrapeState.maxResults) {
       const cards = Array.from(document.querySelectorAll('a[href*="/maps/place/"]'));
       
@@ -114,8 +118,8 @@ async function runScrapeLoop() {
         const clickTarget = card.querySelector('.qBF1Pd') || card;
         (clickTarget).click();
         
-        // Wait for details side panel to load
-        await sleep(2500);
+        // Wait for details side panel to load (using user-configured scroll delay + loading margin)
+        await sleep(delayMs + 1500);
 
         // Parse fields
         const parsedLead = parseSidePanelDetails();
@@ -139,12 +143,12 @@ async function runScrapeLoop() {
 
       // Scroll feed down
       feed.scrollTo(0, feed.scrollHeight);
-      await sleep(1500);
+      await sleep(delayMs);
 
       // Check if we hit bottom of feed
       if (feed.scrollHeight === previousScrollHeight) {
         scrollAttempts++;
-        if (scrollAttempts > 3) {
+        if (scrollAttempts > retryMax) {
           console.log("Reached end of Google Maps listing.");
           break;
         }
