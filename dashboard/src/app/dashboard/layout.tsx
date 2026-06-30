@@ -68,14 +68,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               key={item.name}
               href={item.href}
               onClick={() => setMobileMenuOpen(false)}
-              className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-all duration-200 ${
-                isActive
+              className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-all duration-200 ${isActive
                   ? "text-primary bg-primary-container/10 font-semibold"
                   : "text-on-surface-variant hover:bg-surface-container-high"
-              }`}
+                }`}
             >
-              <span 
-                className="material-symbols-outlined" 
+              <span
+                className="material-symbols-outlined"
                 style={{ fontVariationSettings: isActive ? "'FILL' 1" : "'FILL' 0" }}
               >
                 {item.icon}
@@ -84,6 +83,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </Link>
           );
         })}
+
+        {/* Download Extension CTA */}
+        <div className="mx-2 mt-4 mb-2">
+          <a
+            href="https://chromewebstore.google.com/detail/kphodcgndojceocfdcdiallbhmokmfjp?utm_source=item-share-cb"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-primary/10 via-primary/5 to-secondary/10 border border-primary/20 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300"
+          >
+            <span className="flex items-center justify-center w-9 h-9 rounded-lg bg-primary/15 text-primary group-hover:scale-110 transition-transform duration-300">
+              <span className="material-symbols-outlined text-[20px]">extension</span>
+            </span>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-bold text-on-surface leading-tight">Get Chrome Extension</p>
+              <p className="text-[10px] text-on-surface-variant leading-tight mt-0.5">Install LeadFlow Agent</p>
+            </div>
+            <span className="material-symbols-outlined text-[16px] text-primary opacity-0 group-hover:opacity-100 transition-opacity duration-300">open_in_new</span>
+          </a>
+        </div>
 
         <div className="pt-6 pb-2 px-4">
           <p className="text-[11px] font-bold text-outline uppercase tracking-widest">Utility</p>
@@ -96,14 +114,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               key={item.name}
               href={item.href}
               onClick={() => setMobileMenuOpen(false)}
-              className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-all duration-200 ${
-                isActive
+              className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-all duration-200 ${isActive
                   ? "text-primary bg-primary-container/10 font-semibold"
                   : "text-on-surface-variant hover:bg-surface-container-high"
-              }`}
+                }`}
             >
-              <span 
-                className="material-symbols-outlined" 
+              <span
+                className="material-symbols-outlined"
                 style={{ fontVariationSettings: isActive ? "'FILL' 1" : "'FILL' 0" }}
               >
                 {item.icon}
@@ -148,7 +165,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="min-h-screen bg-surface-container-low text-on-surface relative">
-      
+
       {/* Desktop Sidebar */}
       <aside className="hidden lg:flex flex-col h-full py-6 bg-surface border-r border-outline-variant h-screen w-64 fixed left-0 top-0 z-50">
         <SidebarContent />
@@ -157,7 +174,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Mobile Drawer Overlay */}
       {mobileMenuOpen && (
         <div className="lg:hidden fixed inset-0 z-50 flex">
-          <div 
+          <div
             className="fixed inset-0 bg-black/40 backdrop-blur-sm"
             onClick={() => setMobileMenuOpen(false)}
           />
@@ -175,7 +192,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Header Viewport Area */}
       <div className="lg:pl-64 flex flex-col min-h-screen">
-        
+
         {/* Top Navbar */}
         <header className="fixed top-0 right-0 left-0 lg:left-64 h-16 bg-surface/80 backdrop-blur-md z-40 border-b border-outline-variant flex justify-between items-center px-6 md:px-8">
           <div className="flex items-center gap-4 flex-1">
@@ -207,7 +224,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <span className="material-symbols-outlined text-[22px]">help_outline</span>
               </button>
             </div>
-            
+
             <div className="flex items-center gap-2 cursor-pointer p-1 rounded-full hover:bg-surface-container-high transition-colors">
               {user.photoURL ? (
                 <img
