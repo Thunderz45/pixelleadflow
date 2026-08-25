@@ -150,17 +150,17 @@ export default function DashboardOverview() {
       {/* About LeadFlow Summary Card */}
       <div className="bg-gradient-to-r from-primary/10 via-surface to-secondary/10 border border-primary/20 rounded-2xl p-6 shadow-sm relative overflow-hidden">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
-          <div className="space-y-2 max-w-2xl">
-            <div className="flex items-center gap-2">
+          <div className="space-y-2 max-w-2xl text-left">
+            <div className="flex items-center gap-2 text-left">
               <span className="px-2.5 py-0.5 bg-primary/10 text-primary text-[11px] font-bold rounded-full uppercase tracking-wider">
                 About LeadFlow
               </span>
               <span className="text-xs text-on-surface-variant font-medium">• B2B Lead Engine</span>
             </div>
-            <h3 className="text-xl font-bold text-on-surface">
+            <h3 className="text-xl font-bold text-on-surface text-left">
               Discover, Organize & Export High-Intent Business Leads
             </h3>
-            <p className="text-xs text-on-surface-variant leading-relaxed">
+            <p className="text-xs text-on-surface-variant leading-relaxed text-left">
               LeadFlow is an intelligent lead generation SaaS platform designed to discover business contacts from Google Maps and web directories. Extract verified business names, phone numbers, ratings, physical addresses, and website links directly into organized campaign projects for instant Excel and CSV exports.
             </p>
           </div>
