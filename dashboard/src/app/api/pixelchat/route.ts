@@ -11,11 +11,12 @@ Your goal is to help users discover, extract, manage, and export high-intent bus
 
 Key Information about LeadFlow:
 1. **Core Purpose**: LeadFlow allows users to discover business contacts (Name, Address, Phone Number, Rating, Website) from Google Maps and web directories.
-2. **Projects Workspace**: Users can organize leads into named campaign folders like "Dental Clinics in Texas" or "Real Estate Prospects".
-3. **Saved Businesses**: A searchable database directory containing enriched contact cards.
-4. **LeadFlow Chrome Extension**: A 1-click companion extension that operates on Google Maps to scrape business listings directly into the LeadFlow Cloud Dashboard.
-5. **Data Exports**: Supports exporting scraped lead contacts into Excel (.xlsx) or CSV files.
-6. **Search History**: Tracks automated search runs, search parameters, and result counts.
+2. **AI Website Generator**: Automatically generates custom, single-page website landing page prototypes for leads that don't have websites.
+3. **LinkedIn Scraper**: Scrapes LinkedIn profiles with auto-categorization into Developers, AI Engineers, Designers, Sales, Marketing, and Executives.
+4. **Projects Workspace**: Users organize leads into named campaign folders like "Dental Clinics in Texas" or "Real Estate Prospects".
+5. **Saved Businesses**: A searchable database directory containing enriched contact cards.
+6. **LeadFlow Chrome Extension**: A 1-click companion extension operating on Google Maps to scrape business listings directly into the LeadFlow Cloud Dashboard.
+7. **Data Exports**: Supports exporting scraped lead contacts into Excel (.xlsx) or CSV files.
 
 Tone & Style:
 - Be concise, helpful, friendly, and professional.
@@ -30,39 +31,54 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid messages format." }, { status: 400 });
     }
 
-    const payload = {
-      model: "llama-3.3-70b-versatile",
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        ...messages.map((m: any) => ({
-          role: m.role === "user" ? "user" : "assistant",
-          content: m.content,
-        })),
-      ],
-      temperature: 0.7,
-      max_tokens: 1024,
-    };
+    const payloadMessages = [
+      { role: "system", content: SYSTEM_PROMPT },
+      ...messages.map((m: any) => ({
+        role: m.role === "user" ? "user" : "assistant",
+        content: m.content,
+      })),
+    ];
 
-    const response = await fetch(GROQ_API_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${GROQ_API_KEY}`,
-      },
-      body: JSON.stringify(payload),
-    });
+    // Try primary model groq/compound, fallback to openai/gpt-oss-120b
+    const modelsToTry = ["groq/compound", "openai/gpt-oss-120b", "qwen/qwen3.6-27b"];
+    let botReply = "";
+    let lastError = "";
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Groq API error:", response.status, errorText);
-      return NextResponse.json(
-        { error: `Groq API returned status ${response.status}.` },
-        { status: response.status }
-      );
+    for (const model of modelsToTry) {
+      try {
+        const response = await fetch(GROQ_API_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${GROQ_API_KEY}`,
+          },
+          body: JSON.stringify({
+            model,
+            messages: payloadMessages,
+            temperature: 0.7,
+            max_tokens: 1024,
+          }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          botReply = data.choices?.[0]?.message?.content || "";
+          if (botReply) break;
+        } else {
+          lastError = await response.text();
+          console.warn(`Groq model ${model} failed:`, response.status, lastError);
+        }
+      } catch (err: any) {
+        console.warn(`Fetch error for Groq model ${model}:`, err);
+      }
     }
 
-    const data = await response.json();
-    const botReply = data.choices?.[0]?.message?.content || "I'm sorry, I couldn't process your request right now.";
+    if (!botReply) {
+      return NextResponse.json(
+        { error: "Groq API error: Unable to get completion." },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({ reply: botReply });
   } catch (error: any) {
