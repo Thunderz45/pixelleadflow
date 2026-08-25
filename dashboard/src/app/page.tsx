@@ -1,178 +1,416 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { useAuth } from "@/context/auth-context";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
-export default function LoginPage() {
-  const { user, loading, loginWithEmail } = useAuth();
+export default function HomePage() {
   const router = useRouter();
-  
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [isSigningIn, setIsSigningIn] = useState(false);
-  const [error, setError] = useState("");
+  const [activeTab, setActiveTab] = useState<"website" | "scraper" | "linkedin">("website");
 
-  // If user is already authenticated, redirect to /dashboard
-  useEffect(() => {
-    if (!loading && user) {
-      router.push("/dashboard");
-    }
-  }, [user, loading, router]);
-
-  // Subtle Mouse parallax for background elements
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      const moveX = (e.clientX - window.innerWidth / 2) * 0.01;
-      const moveY = (e.clientY - window.innerHeight / 2) * 0.01;
-      
-      const elements = document.querySelectorAll(".blur-glow");
-      if (elements.length >= 2) {
-        (elements[0] as HTMLElement).style.transform = `translate(${moveX}px, ${moveY}px)`;
-        (elements[1] as HTMLElement).style.transform = `translate(${-moveX}px, ${-moveY}px)`;
-      }
-    };
-    window.addEventListener("mousemove", handleMouseMove);
-    return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, []);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email || !password) {
-      setError("Please fill out both email and password.");
-      return;
-    }
-    setError("");
-    setIsSigningIn(true);
-    try {
-      await loginWithEmail(email, password);
-      router.push("/dashboard");
-    } catch (err: any) {
-      console.error("Login failed:", err);
-      setError(err.message || "Invalid credentials. Please try again.");
-    } finally {
-      setIsSigningIn(false);
+  const scrollToHowItWorks = () => {
+    const el = document.getElementById("how-it-works");
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth" });
     }
   };
 
-  if (loading || isSigningIn) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background text-on-surface">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-on-surface-variant text-sm tracking-wider font-semibold animate-pulse">
-            SECURELY LOADING LEADFLOW...
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen flex items-center justify-center p-margin-mobile md:p-0 relative overflow-hidden bg-background text-on-surface">
-      {/* Background Elements */}
-      <div className="absolute inset-0 z-0 overflow-hidden select-none pointer-events-none">
-        <div className="absolute inset-0 dot-pattern"></div>
-        <div className="absolute blur-glow -top-[10%] -left-[10%] w-[40%] h-[40%] bg-primary-container/10 rounded-full blur-[120px] transition-transform duration-300"></div>
-        <div className="absolute blur-glow -bottom-[10%] -right-[10%] w-[40%] h-[40%] bg-secondary-container/10 rounded-full blur-[120px] transition-transform duration-300"></div>
+    <div className="min-h-screen bg-background text-on-surface relative overflow-x-hidden">
+      
+      {/* Background Decorative Lighting */}
+      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none select-none">
+        <div className="absolute dot-pattern inset-0 opacity-40"></div>
+        <div className="absolute -top-[10%] left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-primary/10 rounded-full blur-[140px]"></div>
+        <div className="absolute top-[40%] -right-[10%] w-[500px] h-[500px] bg-secondary/10 rounded-full blur-[140px]"></div>
+        <div className="absolute bottom-0 -left-[10%] w-[600px] h-[600px] bg-primary-container/10 rounded-full blur-[140px]"></div>
       </div>
 
-      {/* Main Content Shell */}
-      <main className="relative z-10 w-full max-w-[440px] animate-fade-in">
-        <div className="bg-white border border-outline-variant shadow-2xl rounded-2xl p-8 md:p-10 flex flex-col items-center">
+      {/* Top Header Navbar */}
+      <header className="sticky top-0 z-50 backdrop-blur-md bg-white/80 border-b border-outline-variant/60">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           
-          {/* Brand Logo */}
-          <div className="mb-8 flex flex-col items-center gap-2">
-            <img src="/logo.png" alt="LeadFlow Logo" className="w-12 h-12 rounded-full shadow-lg shadow-primary/20 object-cover" />
-            <h1 className="text-2xl font-bold text-primary tracking-tight">LeadFlow</h1>
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-2.5 group">
+            <img
+              src="/logo.png"
+              alt="LeadFlow Logo"
+              className="w-9 h-9 rounded-xl shadow-md shadow-primary/20 object-cover group-hover:scale-105 transition-transform"
+            />
+            <span className="font-extrabold text-xl text-primary tracking-tight">LeadFlow</span>
+          </Link>
+
+          {/* Nav Links */}
+          <nav className="hidden md:flex items-center gap-8 text-xs font-bold text-on-surface-variant">
+            <a href="#features" className="hover:text-primary transition-colors">
+              Features
+            </a>
+            <a href="#website-generator" className="hover:text-primary transition-colors flex items-center gap-1">
+              <span className="material-symbols-outlined text-sm text-primary">auto_awesome</span>
+              AI Website Generator
+            </a>
+            <a href="#linkedin" className="hover:text-primary transition-colors">
+              LinkedIn Scraper
+            </a>
+            <a href="#how-it-works" className="hover:text-primary transition-colors">
+              How It Works
+            </a>
+          </nav>
+
+          {/* Action CTA */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => router.push("/dashboard")}
+              className="px-5 py-2.5 bg-gradient-to-r from-primary to-primary-container text-white rounded-xl font-bold text-xs shadow-md shadow-primary/25 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer flex items-center gap-1.5"
+            >
+              <span>Go to Dashboard</span>
+              <span className="material-symbols-outlined text-sm">arrow_forward</span>
+            </button>
           </div>
 
-          {/* Welcome Header */}
-          <div className="text-center mb-6">
-            <h2 className="text-xl font-bold text-on-surface mb-1">Welcome to LeadFlow</h2>
-            <p className="text-xs text-on-surface-variant leading-relaxed max-w-xs mx-auto">
-              The automated lead generation platform to discover, extract, organize, and export verified B2B business leads.
+        </div>
+      </header>
+
+      {/* Hero Section */}
+      <section className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-20 text-center">
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold mb-6 animate-fade-in">
+          <span className="material-symbols-outlined text-base">auto_awesome</span>
+          <span>B2B Lead Engine & AI Website Generator</span>
+        </div>
+
+        <h1 className="text-4xl sm:text-6xl font-extrabold text-on-surface tracking-tight leading-[1.15] max-w-4xl mx-auto">
+          Discover High-Intent Business Leads & <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-primary-container to-secondary">Auto-Generate Websites</span>
+        </h1>
+
+        <p className="mt-6 text-base sm:text-lg text-on-surface-variant max-w-2xl mx-auto leading-relaxed">
+          LeadFlow extracts B2B contact data from Google Maps & LinkedIn. For businesses missing a website, LeadFlow automatically generates custom, high-converting prototype landing pages in seconds.
+        </p>
+
+        {/* Two Prominent Action Buttons */}
+        <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+          <button
+            onClick={() => router.push("/dashboard")}
+            className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-primary via-primary-container to-secondary text-white rounded-2xl font-extrabold text-sm shadow-xl shadow-primary/30 hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-2 group"
+          >
+            <span className="material-symbols-outlined text-xl">rocket_launch</span>
+            <span>Try LeadFlow Now</span>
+            <span className="material-symbols-outlined text-lg group-hover:translate-x-1 transition-transform">
+              arrow_forward
+            </span>
+          </button>
+
+          <button
+            onClick={scrollToHowItWorks}
+            className="w-full sm:w-auto px-8 py-4 bg-white hover:bg-surface-container-low text-on-surface border border-outline-variant rounded-2xl font-bold text-sm shadow-sm transition-all cursor-pointer flex items-center justify-center gap-2"
+          >
+            <span className="material-symbols-outlined text-xl text-primary">play_circle</span>
+            <span>How It Works</span>
+          </button>
+        </div>
+
+        {/* Live Stats Bar */}
+        <div className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
+          <div className="bg-white/80 backdrop-blur-md p-4 rounded-2xl border border-outline-variant/60 shadow-xs">
+            <h3 className="text-2xl font-extrabold text-primary">100%</h3>
+            <p className="text-xs text-on-surface-variant mt-0.5">Automated Lead Extraction</p>
+          </div>
+          <div className="bg-white/80 backdrop-blur-md p-4 rounded-2xl border border-outline-variant/60 shadow-xs">
+            <h3 className="text-2xl font-extrabold text-secondary">&lt; 5 sec</h3>
+            <p className="text-xs text-on-surface-variant mt-0.5">AI Website Prototype Generation</p>
+          </div>
+          <div className="bg-white/80 backdrop-blur-md p-4 rounded-2xl border border-outline-variant/60 shadow-xs">
+            <h3 className="text-2xl font-extrabold text-emerald-600">6 Categories</h3>
+            <p className="text-xs text-on-surface-variant mt-0.5">LinkedIn Profile Auto-Tagging</p>
+          </div>
+          <div className="bg-white/80 backdrop-blur-md p-4 rounded-2xl border border-outline-variant/60 shadow-xs">
+            <h3 className="text-2xl font-extrabold text-amber-600">1-Click</h3>
+            <p className="text-xs text-on-surface-variant mt-0.5">Excel & CSV Campaign Exports</p>
+          </div>
+        </div>
+      </section>
+
+      {/* AI Website Generator Spotlight Section */}
+      <section id="website-generator" className="relative z-10 py-16 bg-surface-container-low/50 border-y border-outline-variant/60">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          
+          <div className="text-center max-w-3xl mx-auto mb-12">
+            <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider">
+              Specialized Feature
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-on-surface mt-3">
+              Turn "No Website" Leads Into High-Value Clients
+            </h2>
+            <p className="text-sm sm:text-base text-on-surface-variant mt-3 leading-relaxed">
+              When Google Maps leads don't have a website listed, LeadFlow provides a <b>"✨ Generate Website"</b> button that creates a complete, responsive landing page prototype using AI based on their Google Maps profile.
             </p>
           </div>
 
-          {error && (
-            <div className="w-full mb-4 p-3 bg-red-50 text-red-600 text-xs rounded-lg border border-red-200 text-center font-medium animate-pulse">
-              {error}
-            </div>
-          )}
-
-          {/* Login Form */}
-          <form onSubmit={handleSubmit} className="w-full space-y-6">
-            <div className="space-y-2">
-              <label className="text-xs font-semibold text-on-surface-variant ml-1" htmlFor="email">Email Address</label>
-              <div className="relative group">
-                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-primary transition-colors flex items-center">
-                  <span className="material-symbols-outlined text-[20px]">alternate_email</span>
-                </div>
-                <input
-                  className="w-full pl-10 pr-4 py-2.5 bg-white border border-outline-variant rounded-lg text-sm text-on-surface focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all"
-                  id="email"
-                  placeholder="name@company.com"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
-            </div>
+          {/* Interactive Feature Demo Card */}
+          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-outline-variant shadow-xl grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
             
-            <div className="space-y-2">
-              <div className="flex justify-between items-center px-1">
-                <label className="text-xs font-semibold text-on-surface-variant" htmlFor="password">Password</label>
-                <a className="text-[11px] text-primary hover:underline transition-all" href="#">Forgot password?</a>
+            {/* Left Column: Problem & Lead Card */}
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <span className="text-xs font-bold text-rose-600 bg-rose-50 px-2.5 py-1 rounded-md">
+                  Step 1: Detected Lead Missing Website
+                </span>
+                <h3 className="text-xl font-bold text-on-surface">Google Maps Lead Card</h3>
+                <p className="text-xs text-on-surface-variant">
+                  Extracted contact has high rating & reviews, but lacks an online web presence.
+                </p>
               </div>
-              <div className="relative group">
-                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-primary transition-colors flex items-center">
-                  <span className="material-symbols-outlined text-[20px]">lock</span>
-                </div>
-                <input
-                  className="w-full pl-10 pr-10 py-2.5 bg-white border border-outline-variant rounded-lg text-sm text-on-surface focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all"
-                  id="password"
-                  placeholder="••••••••"
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-                <button
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-outline hover:text-on-surface-variant transition-colors flex items-center cursor-pointer"
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  <span className="material-symbols-outlined text-[20px]">
-                    {showPassword ? "visibility_off" : "visibility"}
+
+              {/* Lead Card Preview */}
+              <div className="p-4 bg-surface-container-low border border-outline-variant rounded-2xl space-y-3 shadow-xs">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h4 className="font-bold text-sm text-on-surface">Apex Dental Clinic</h4>
+                    <p className="text-xs text-on-surface-variant">124 Main Street, Austin TX</p>
+                  </div>
+                  <span className="px-2 py-0.5 bg-amber-100 text-amber-800 text-[10px] font-bold rounded-md">
+                    ★ 4.9 (84 reviews)
                   </span>
-                </button>
+                </div>
+
+                <div className="flex items-center justify-between text-xs pt-2 border-t border-outline-variant/40">
+                  <span className="text-on-surface-variant font-medium">Phone: (512) 555-0192</span>
+                  <span className="text-rose-600 font-bold bg-rose-100 px-2 py-0.5 rounded text-[10px]">
+                    Website: N/A
+                  </span>
+                </div>
+
+                {/* Generate Button Highlight */}
+                <div className="pt-2">
+                  <button
+                    onClick={() => router.push("/dashboard")}
+                    className="w-full py-2.5 bg-gradient-to-r from-primary via-primary-container to-secondary text-white font-bold text-xs rounded-xl shadow-md flex items-center justify-center gap-1.5 cursor-pointer hover:scale-[1.01] transition-transform"
+                  >
+                    <span className="material-symbols-outlined text-sm">auto_awesome</span>
+                    <span>✨ Generate Website Prototype</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-xs text-on-surface font-semibold">
+                  <span className="material-symbols-outlined text-emerald-600 text-base">check_circle</span>
+                  Generates complete HTML, Tailwind CSS, Google Fonts, and booking CTAs.
+                </div>
+                <div className="flex items-center gap-2 text-xs text-on-surface font-semibold">
+                  <span className="material-symbols-outlined text-emerald-600 text-base">check_circle</span>
+                  Download `.html` files or copy code directly to pitch business owners.
+                </div>
               </div>
             </div>
 
-            {/* Submit Button */}
-            <button
-              className="w-full py-2.5 bg-primary text-white rounded-lg font-semibold shadow-lg shadow-primary/25 hover:bg-primary-container transition-all active:scale-[0.98] mt-2 text-sm cursor-pointer"
-              type="submit"
-            >
-              Sign in to LeadFlow
-            </button>
-          </form>
+            {/* Right Column: AI Generated Prototype Preview */}
+            <div className="bg-slate-900 rounded-2xl p-4 border border-slate-800 text-white space-y-4 shadow-2xl">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-800 text-xs">
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-rose-500"></span>
+                  <span className="w-3 h-3 rounded-full bg-amber-500"></span>
+                  <span className="w-3 h-3 rounded-full bg-emerald-500"></span>
+                  <span className="text-slate-400 font-mono text-[11px] ml-2">apex_dental_prototype.html</span>
+                </div>
+                <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-300 text-[10px] font-bold rounded">
+                  AI Generated Live
+                </span>
+              </div>
 
-          {/* Footer Link */}
-          <p className="mt-8 text-on-surface-variant text-sm text-center w-full">
-            Don't have an account?{" "}
-            <a className="text-primary font-semibold hover:underline" href="#">Start free trial</a>
+              {/* Landing Page Mockup */}
+              <div className="bg-slate-950 rounded-xl p-5 border border-slate-800 space-y-4">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="font-extrabold text-blue-400">Apex Dental Clinic</span>
+                  <span className="px-2 py-1 bg-blue-600 text-white rounded text-[10px] font-bold">Call: (512) 555-0192</span>
+                </div>
+
+                <div className="py-6 text-center space-y-2">
+                  <h4 className="font-extrabold text-base text-white">Your Smile's Best Care in Austin</h4>
+                  <p className="text-[11px] text-slate-400 max-w-xs mx-auto">
+                    Top-rated general & cosmetic dentistry. Rated ★ 4.9 Stars from 84 local patient reviews.
+                  </p>
+                  <button
+                    onClick={() => router.push("/dashboard")}
+                    className="mt-3 px-4 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-bold shadow-md cursor-pointer hover:bg-blue-500 transition-colors"
+                  >
+                    Book Appointment Now
+                  </button>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+      </section>
+
+      {/* Interactive "How It Works" Section */}
+      <section id="how-it-works" className="relative z-10 py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center max-w-3xl mx-auto mb-16">
+          <span className="px-3 py-1 rounded-full bg-secondary/10 text-secondary text-xs font-bold uppercase tracking-wider">
+            Step-by-Step Workflow
+          </span>
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-on-surface mt-3">
+            How LeadFlow Powers Your Outreach
+          </h2>
+          <p className="text-sm sm:text-base text-on-surface-variant mt-3">
+            From discovering leads to generating custom website proposals and exporting clean datasets.
           </p>
         </div>
 
-        {/* Decorative Footer */}
-        <div className="mt-8 flex items-center justify-center gap-4 opacity-40 text-[11px] text-on-surface-variant font-semibold">
-          <span>© 2026 LeadFlow Inc.</span>
-          <span>•</span>
-          <span className="cursor-pointer hover:underline">Privacy Policy</span>
+        {/* 4 Step Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          
+          <div className="bg-white p-6 rounded-2xl border border-outline-variant shadow-xs space-y-3 relative overflow-hidden group hover:border-primary/40 transition-colors">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-extrabold text-sm">
+              01
+            </div>
+            <h3 className="font-bold text-base text-on-surface">Search & Scrape Leads</h3>
+            <p className="text-xs text-on-surface-variant leading-relaxed">
+              Extract business contacts from Google Maps or search LinkedIn profiles filtered by role & location.
+            </p>
+          </div>
+
+          <div className="bg-white p-6 rounded-2xl border border-outline-variant shadow-xs space-y-3 relative overflow-hidden group hover:border-primary/40 transition-colors">
+            <div className="w-10 h-10 rounded-xl bg-secondary/10 text-secondary flex items-center justify-center font-extrabold text-sm">
+              02
+            </div>
+            <h3 className="font-bold text-base text-on-surface">Auto-Detect Missing Websites</h3>
+            <p className="text-xs text-on-surface-variant leading-relaxed">
+              LeadFlow flags high-rating business leads that currently lack an official website online.
+            </p>
+          </div>
+
+          <div className="bg-white p-6 rounded-2xl border border-outline-variant shadow-xs space-y-3 relative overflow-hidden group hover:border-primary/40 transition-colors">
+            <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-extrabold text-sm">
+              03
+            </div>
+            <h3 className="font-bold text-base text-on-surface">Click "✨ Generate Website"</h3>
+            <p className="text-xs text-on-surface-variant leading-relaxed">
+              Generate responsive HTML website prototypes customized to the business's profile in 5 seconds.
+            </p>
+          </div>
+
+          <div className="bg-white p-6 rounded-2xl border border-outline-variant shadow-xs space-y-3 relative overflow-hidden group hover:border-primary/40 transition-colors">
+            <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-extrabold text-sm">
+              04
+            </div>
+            <h3 className="font-bold text-base text-on-surface">Export & Close Deals</h3>
+            <p className="text-xs text-on-surface-variant leading-relaxed">
+              Download campaign datasets into `.xlsx` Excel spreadsheets or `.csv` files for cold outreach.
+            </p>
+          </div>
+
         </div>
-      </main>
+
+        {/* Workflow CTA */}
+        <div className="mt-12 text-center">
+          <button
+            onClick={() => router.push("/dashboard")}
+            className="px-6 py-3 bg-primary text-white font-bold text-xs rounded-xl shadow-md hover:bg-primary-container transition-all cursor-pointer inline-flex items-center gap-2"
+          >
+            <span>Launch LeadFlow Dashboard</span>
+            <span className="material-symbols-outlined text-sm">open_in_new</span>
+          </button>
+        </div>
+      </section>
+
+      {/* Feature Grid Section */}
+      <section id="features" className="relative z-10 py-16 bg-surface-container-low/40 border-t border-outline-variant">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider">
+              Complete Feature Suite
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-on-surface mt-3">
+              Everything You Need for B2B Lead Growth
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            
+            <div className="bg-white p-6 rounded-2xl border border-outline-variant shadow-xs space-y-3">
+              <div className="w-10 h-10 rounded-xl bg-blue-100 text-primary flex items-center justify-center">
+                <span className="material-symbols-outlined text-xl">map</span>
+              </div>
+              <h3 className="font-bold text-base text-on-surface">Google Maps B2B Extractor</h3>
+              <p className="text-xs text-on-surface-variant leading-relaxed">
+                Companion Chrome extension scrapes business names, phones, addresses, ratings, and website status into campaign folders.
+              </p>
+            </div>
+
+            <div className="bg-white p-6 rounded-2xl border border-outline-variant shadow-xs space-y-3" id="linkedin">
+              <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center">
+                <span className="material-symbols-outlined text-xl">badge</span>
+              </div>
+              <h3 className="font-bold text-base text-on-surface">LinkedIn Profile Scraper</h3>
+              <p className="text-xs text-on-surface-variant leading-relaxed">
+                Apify-powered profile scraper with smart auto-categorization into Developers, AI Engineers, Sales, Marketing, and Executives.
+              </p>
+            </div>
+
+            <div className="bg-white p-6 rounded-2xl border border-outline-variant shadow-xs space-y-3">
+              <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center">
+                <span className="material-symbols-outlined text-xl">auto_awesome</span>
+              </div>
+              <h3 className="font-bold text-base text-on-surface">PixelChat AI Assistant</h3>
+              <p className="text-xs text-on-surface-variant leading-relaxed">
+                Built-in AI chat helper powered by Groq Llama 3.3 to assist you in real-time with search strategies and exports.
+              </p>
+            </div>
+
+          </div>
+
+        </div>
+      </section>
+
+      {/* Final Bottom CTA Banner */}
+      <section className="relative z-10 py-16 bg-gradient-to-r from-slate-900 via-primary-fixed-dim/20 to-slate-950 text-white">
+        <div className="max-w-5xl mx-auto px-4 text-center space-y-6">
+          <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight">
+            Ready to Discover Leads & Generate Websites?
+          </h2>
+          <p className="text-sm sm:text-base text-slate-300 max-w-xl mx-auto">
+            Access the LeadFlow dashboard today to start scraping Google Maps, LinkedIn profiles, and creating AI website prototypes.
+          </p>
+
+          <div className="pt-4 flex justify-center">
+            <button
+              onClick={() => router.push("/dashboard")}
+              className="px-8 py-4 bg-gradient-to-r from-primary via-primary-container to-secondary text-white font-extrabold text-sm rounded-2xl shadow-2xl hover:scale-105 transition-transform cursor-pointer flex items-center gap-2"
+            >
+              <span>Try LeadFlow Now</span>
+              <span className="material-symbols-outlined text-lg">arrow_forward</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="bg-slate-950 text-slate-400 text-xs py-8 border-t border-slate-900">
+        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <img src="/logo.png" alt="LeadFlow Logo" className="w-6 h-6 rounded-lg object-cover" />
+            <span className="font-bold text-white">LeadFlow</span>
+            <span>© 2026 LeadFlow Inc. All rights reserved.</span>
+          </div>
+
+          <div className="flex items-center gap-6">
+            <button onClick={() => router.push("/dashboard")} className="hover:text-white transition-colors cursor-pointer">
+              Dashboard
+            </button>
+            <a href="#features" className="hover:text-white transition-colors">
+              Features
+            </a>
+            <a href="#how-it-works" className="hover:text-white transition-colors">
+              How It Works
+            </a>
+          </div>
+        </div>
+      </footer>
+
     </div>
   );
 }
