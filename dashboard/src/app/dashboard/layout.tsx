@@ -32,7 +32,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   const navItems = [
-    { name: "Dashboard", href: "/dashboard", icon: "dashboard" },
+    { name: "Home", href: "/dashboard", icon: "home" },
     { name: "Projects", href: "/dashboard/projects", icon: "folder_open" },
     { name: "Saved Businesses", href: "/dashboard/saved", icon: "business_center" },
     { name: "Search History", href: "/dashboard/history", icon: "history" },

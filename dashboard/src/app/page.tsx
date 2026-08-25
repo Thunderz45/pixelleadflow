@@ -89,9 +89,11 @@ export default function LoginPage() {
           </div>
 
           {/* Welcome Header */}
-          <div className="text-center mb-8">
-            <h2 className="text-xl font-bold text-on-surface mb-2">Welcome back</h2>
-            <p className="text-sm text-on-surface-variant">Please enter your details to sign in.</p>
+          <div className="text-center mb-6">
+            <h2 className="text-xl font-bold text-on-surface mb-1">Welcome to LeadFlow</h2>
+            <p className="text-xs text-on-surface-variant leading-relaxed max-w-xs mx-auto">
+              The automated lead generation platform to discover, extract, organize, and export verified B2B business leads.
+            </p>
           </div>
 
           {error && (
