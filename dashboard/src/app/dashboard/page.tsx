@@ -149,45 +149,45 @@ export default function DashboardOverview() {
 
       {/* About LeadFlow Summary Card */}
       <div className="bg-gradient-to-r from-primary/10 via-surface to-secondary/10 border border-primary/20 rounded-2xl p-6 shadow-sm relative overflow-hidden">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
-          <div className="space-y-2 max-w-2xl text-left">
-            <div className="flex items-center gap-2 text-left">
-              <span className="px-2.5 py-0.5 bg-primary/10 text-primary text-[11px] font-bold rounded-full uppercase tracking-wider">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
+          <div className="flex-1 min-w-0 space-y-3 text-left">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="px-2.5 py-0.5 bg-primary/10 text-primary text-[11px] font-bold rounded-full uppercase tracking-wider whitespace-nowrap">
                 About LeadFlow
               </span>
-              <span className="text-xs text-on-surface-variant font-medium">• B2B Lead Engine</span>
+              <span className="text-xs text-on-surface-variant font-medium whitespace-nowrap">• B2B Lead Engine</span>
             </div>
-            <h3 className="text-xl font-bold text-on-surface text-left">
+            <h3 className="text-xl md:text-2xl font-bold text-on-surface leading-snug">
               Discover, Organize & Export High-Intent Business Leads
             </h3>
-            <p className="text-xs text-on-surface-variant leading-relaxed text-left">
+            <p className="text-xs md:text-sm text-on-surface-variant leading-relaxed max-w-3xl">
               LeadFlow is an intelligent lead generation SaaS platform designed to discover business contacts from Google Maps and web directories. Extract verified business names, phone numbers, ratings, physical addresses, and website links directly into organized campaign projects for instant Excel and CSV exports.
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 shrink-0">
-            <div className="bg-white/80 backdrop-blur-sm p-3 rounded-xl border border-outline-variant/60">
+          <div className="grid grid-cols-2 gap-3 shrink-0 w-full sm:w-auto">
+            <div className="bg-white/80 backdrop-blur-sm p-3 rounded-xl border border-outline-variant/60 min-w-[140px]">
               <div className="flex items-center gap-2 text-primary font-bold text-xs">
                 <span className="material-symbols-outlined text-base">manage_search</span>
                 Automated Scraping
               </div>
               <p className="text-[10px] text-on-surface-variant mt-1">Extract Google Maps listings</p>
             </div>
-            <div className="bg-white/80 backdrop-blur-sm p-3 rounded-xl border border-outline-variant/60">
+            <div className="bg-white/80 backdrop-blur-sm p-3 rounded-xl border border-outline-variant/60 min-w-[140px]">
               <div className="flex items-center gap-2 text-secondary font-bold text-xs">
                 <span className="material-symbols-outlined text-base">extension</span>
                 Chrome Assistant
               </div>
               <p className="text-[10px] text-on-surface-variant mt-1">1-click browser companion</p>
             </div>
-            <div className="bg-white/80 backdrop-blur-sm p-3 rounded-xl border border-outline-variant/60">
+            <div className="bg-white/80 backdrop-blur-sm p-3 rounded-xl border border-outline-variant/60 min-w-[140px]">
               <div className="flex items-center gap-2 text-emerald-600 font-bold text-xs">
                 <span className="material-symbols-outlined text-base">folder_open</span>
                 Smart Projects
               </div>
               <p className="text-[10px] text-on-surface-variant mt-1">Organize lead campaigns</p>
             </div>
-            <div className="bg-white/80 backdrop-blur-sm p-3 rounded-xl border border-outline-variant/60">
+            <div className="bg-white/80 backdrop-blur-sm p-3 rounded-xl border border-outline-variant/60 min-w-[140px]">
               <div className="flex items-center gap-2 text-amber-600 font-bold text-xs">
                 <span className="material-symbols-outlined text-base">file_download</span>
                 Instant Exports

@@ -96,8 +96,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <span className="material-symbols-outlined text-[20px]">extension</span>
             </span>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-bold text-on-surface leading-tight">Get Chrome Extension</p>
-              <p className="text-[10px] text-on-surface-variant leading-tight mt-0.5">Install LeadFlow Agent</p>
+              <p className="text-xs font-bold text-on-surface leading-tight whitespace-nowrap truncate">Get Chrome Extension</p>
+              <p className="text-[10px] text-on-surface-variant leading-tight mt-0.5 whitespace-nowrap truncate">Install LeadFlow Agent</p>
             </div>
             <span className="material-symbols-outlined text-[16px] text-primary opacity-0 group-hover:opacity-100 transition-opacity duration-300">open_in_new</span>
           </a>
