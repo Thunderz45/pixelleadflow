@@ -9,9 +9,11 @@ import {
   where, 
   getDocs, 
   deleteDoc, 
+  updateDoc,
   doc, 
   orderBy
 } from "firebase/firestore";
+import WebsitePrototypeModal from "@/components/website/WebsitePrototypeModal";
 
 interface Lead {
   id: string;
@@ -44,6 +46,66 @@ export default function SavedBusinessesPage() {
   const [selectedProject, setSelectedProject] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [rowsPerPage, setRowsPerPage] = useState(12);
+
+  // AI Website Generator state
+  const [generatingId, setGeneratingId] = useState<string | null>(null);
+  const [activeModal, setActiveModal] = useState<{
+    isOpen: boolean;
+    html: string;
+    businessName: string;
+    leadId: string;
+  } | null>(null);
+
+  const handleGenerateWebsite = async (lead: Lead) => {
+    setGeneratingId(lead.id);
+    try {
+      const res = await fetch("/api/website/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: lead.name,
+          category: lead.projectName || "Local Business",
+          address: lead.address,
+          phone: lead.phone,
+          rating: lead.rating,
+          reviewsCount: lead.reviewsCount,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.html) {
+        setActiveModal({
+          isOpen: true,
+          html: data.html,
+          businessName: lead.name,
+          leadId: lead.id,
+        });
+      } else {
+        alert(data.error || "Failed to generate website prototype.");
+      }
+    } catch (err) {
+      console.error("Error generating website prototype:", err);
+    } finally {
+      setGeneratingId(null);
+    }
+  };
+
+  const handleSavePrototypeToLead = async () => {
+    if (!activeModal?.leadId) return;
+    try {
+      const docRef = doc(db, "businesses", activeModal.leadId);
+      await updateDoc(docRef, {
+        website: "AI Prototype Created",
+      });
+      setLeads((prev) =>
+        prev.map((l) =>
+          l.id === activeModal.leadId ? { ...l, website: "AI Prototype Created" } : l
+        )
+      );
+    } catch (err) {
+      console.error("Error updating lead website prototype:", err);
+    }
+  };
 
   const loadFilterData = async () => {
     if (!user) return;
@@ -314,20 +376,39 @@ export default function SavedBusinessesPage() {
                       {lead.phone}
                     </td>
 
-                    {/* Website */}
+                    {/* Website Column */}
                     <td className="p-4">
-                      {lead.website ? (
-                        <a
-                          href={lead.website}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-primary hover:underline flex items-center gap-0.5 font-semibold"
-                        >
-                          website
-                          <span className="material-symbols-outlined text-[14px]">open_in_new</span>
-                        </a>
+                      {lead.website && lead.website !== "N/A" && lead.website !== "" ? (
+                        <div className="flex items-center gap-2">
+                          <a
+                            href={lead.website.startsWith("data:") ? "#" : lead.website}
+                            target={lead.website.startsWith("data:") ? "_self" : "_blank"}
+                            rel="noopener noreferrer"
+                            className="text-primary hover:underline flex items-center gap-0.5 font-semibold text-xs truncate max-w-[100px]"
+                          >
+                            {lead.website.startsWith("data:") ? "AI Prototype" : "Website"}
+                            <span className="material-symbols-outlined text-[14px]">open_in_new</span>
+                          </a>
+                          <button
+                            onClick={() => handleGenerateWebsite(lead)}
+                            disabled={generatingId === lead.id}
+                            title="Generate AI Prototype Landing Page"
+                            className="p-1 bg-primary/10 text-primary hover:bg-primary/20 rounded-md text-[10px] font-bold flex items-center gap-0.5 cursor-pointer transition-colors"
+                          >
+                            <span className="material-symbols-outlined text-[12px]">auto_awesome</span>
+                          </button>
+                        </div>
                       ) : (
-                        <span className="text-on-surface-variant opacity-60">N/A</span>
+                        <button
+                          onClick={() => handleGenerateWebsite(lead)}
+                          disabled={generatingId === lead.id}
+                          className="px-2.5 py-1 bg-gradient-to-r from-primary via-primary-container to-secondary text-white rounded-lg text-[11px] font-bold shadow-xs hover:opacity-90 transition-all flex items-center gap-1 cursor-pointer disabled:opacity-50 whitespace-nowrap"
+                        >
+                          <span className="material-symbols-outlined text-[13px]">
+                            {generatingId === lead.id ? "sync" : "auto_awesome"}
+                          </span>
+                          {generatingId === lead.id ? "Generating..." : "Generate Website"}
+                        </button>
                       )}
                     </td>
 
@@ -382,6 +463,18 @@ export default function SavedBusinessesPage() {
         </div>
 
       </div>
+
+      {/* AI Website Prototype Preview Modal */}
+      {activeModal && (
+        <WebsitePrototypeModal
+          isOpen={activeModal.isOpen}
+          onClose={() => setActiveModal(null)}
+          htmlContent={activeModal.html}
+          businessName={activeModal.businessName}
+          onSaveToLead={handleSavePrototypeToLead}
+        />
+      )}
+
     </div>
   );
 }
