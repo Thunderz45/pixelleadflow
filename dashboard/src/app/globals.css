@@ -3,18 +3,6 @@
 @theme {
   --font-sans: var(--font-inter), system-ui, sans-serif;
   
-  --spacing-xs: 4px;
-  --spacing-sm: 8px;
-  --spacing-md: 16px;
-  --spacing-lg: 24px;
-  --spacing-xl: 32px;
-  --spacing-2xl: 48px;
-  --spacing-3xl: 64px;
-  --spacing-base: 8px;
-  --spacing-gutter: 24px;
-  --spacing-container-max: 1280px;
-  --spacing-margin-mobile: 16px;
-
   --color-primary: #004ac6;
   --color-on-primary: #ffffff;
   --color-primary-container: #2563eb;
