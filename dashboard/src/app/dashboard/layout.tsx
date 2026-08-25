@@ -5,6 +5,7 @@ import { useAuth } from "@/context/auth-context";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { Menu, X } from "lucide-react"; // Fallbacks for mobile toggles
+import PixelChat from "@/components/chat/PixelChat";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, loading, logout } = useAuth();
@@ -165,6 +166,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="min-h-screen bg-surface-container-low text-on-surface relative">
+
+      {/* Floating PixelChat AI Assistant */}
+      <PixelChat />
 
       {/* Desktop Sidebar */}
       <aside className="hidden lg:flex flex-col h-full py-6 bg-surface border-r border-outline-variant h-screen w-64 fixed left-0 top-0 z-50">
