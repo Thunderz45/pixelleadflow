@@ -6,7 +6,8 @@ import {
   signOut, 
   User,
   signInWithEmailAndPassword,
-  createUserWithEmailAndPassword
+  createUserWithEmailAndPassword,
+  updateProfile
 } from "firebase/auth";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
@@ -15,6 +16,7 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   loginWithEmail: (email: string, pass: string) => Promise<void>;
+  registerWithEmail: (email: string, pass: string, name?: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -25,14 +27,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   // Sync user profile to Firestore
-  const syncUserProfile = async (firebaseUser: User) => {
+  const syncUserProfile = async (firebaseUser: User, nameOverride?: string) => {
     const userRef = doc(db, "users", firebaseUser.uid);
     try {
       const userSnap = await getDoc(userRef);
       const userData = {
         uid: firebaseUser.uid,
         email: firebaseUser.email || "",
-        displayName: firebaseUser.displayName || "",
+        displayName: nameOverride || firebaseUser.displayName || "",
         photoURL: firebaseUser.photoURL || "",
         lastLogin: serverTimestamp(),
       };
@@ -81,20 +83,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await signInWithEmailAndPassword(auth, emailStr, passwordStr);
     } catch (error: any) {
-      // If user does not exist, automatically register them!
-      if (error.code === "auth/user-not-found" || error.code === "auth/invalid-credential") {
-        try {
-          await createUserWithEmailAndPassword(auth, emailStr, passwordStr);
-        } catch (signUpError) {
-          console.error("Auto sign-up failed:", signUpError);
-          setLoading(false);
-          throw signUpError;
-        }
-      } else {
-        console.error("Email login failed:", error);
-        setLoading(false);
-        throw error;
+      console.error("Email login failed:", error);
+      setLoading(false);
+      throw error;
+    }
+  };
+
+  const registerWithEmail = async (emailStr: string, passwordStr: string, name?: string) => {
+    setLoading(true);
+    try {
+      const res = await createUserWithEmailAndPassword(auth, emailStr, passwordStr);
+      if (name && res.user) {
+        await updateProfile(res.user, { displayName: name });
+        await syncUserProfile(res.user, name);
       }
+    } catch (error: any) {
+      console.error("Registration failed:", error);
+      setLoading(false);
+      throw error;
     }
   };
 
@@ -109,7 +115,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, loginWithEmail, logout }}>
+    <AuthContext.Provider value={{ user, loading, loginWithEmail, registerWithEmail, logout }}>
       {children}
     </AuthContext.Provider>
   );

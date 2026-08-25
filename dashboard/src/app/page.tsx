@@ -2,11 +2,21 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/auth-context";
 import Link from "next/link";
 
 export default function HomePage() {
+  const { user } = useAuth();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"website" | "scraper" | "linkedin">("website");
+
+  const handleDashboardClick = () => {
+    if (user) {
+      router.push("/dashboard");
+    } else {
+      router.push("/login");
+    }
+  };
 
   const scrollToHowItWorks = () => {
     const el = document.getElementById("how-it-works");
@@ -60,7 +70,7 @@ export default function HomePage() {
           {/* Action CTA */}
           <div className="flex items-center gap-3">
             <button
-              onClick={() => router.push("/dashboard")}
+              onClick={handleDashboardClick}
               className="px-5 py-2.5 bg-gradient-to-r from-primary to-primary-container text-white rounded-xl font-bold text-xs shadow-md shadow-primary/25 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer flex items-center gap-1.5"
             >
               <span>Go to Dashboard</span>
@@ -89,7 +99,7 @@ export default function HomePage() {
         {/* Two Prominent Action Buttons */}
         <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
           <button
-            onClick={() => router.push("/dashboard")}
+            onClick={handleDashboardClick}
             className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-primary via-primary-container to-secondary text-white rounded-2xl font-extrabold text-sm shadow-xl shadow-primary/30 hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-2 group"
           >
             <span className="material-symbols-outlined text-xl">rocket_launch</span>
@@ -182,7 +192,7 @@ export default function HomePage() {
                 {/* Generate Button Highlight */}
                 <div className="pt-2">
                   <button
-                    onClick={() => router.push("/dashboard")}
+                    onClick={handleDashboardClick}
                     className="w-full py-2.5 bg-gradient-to-r from-primary via-primary-container to-secondary text-white font-bold text-xs rounded-xl shadow-md flex items-center justify-center gap-1.5 cursor-pointer hover:scale-[1.01] transition-transform"
                   >
                     <span className="material-symbols-outlined text-sm">auto_awesome</span>
@@ -230,7 +240,7 @@ export default function HomePage() {
                     Top-rated general & cosmetic dentistry. Rated ★ 4.9 Stars from 84 local patient reviews.
                   </p>
                   <button
-                    onClick={() => router.push("/dashboard")}
+                    onClick={handleDashboardClick}
                     className="mt-3 px-4 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-bold shadow-md cursor-pointer hover:bg-blue-500 transition-colors"
                   >
                     Book Appointment Now
@@ -307,7 +317,7 @@ export default function HomePage() {
         {/* Workflow CTA */}
         <div className="mt-12 text-center">
           <button
-            onClick={() => router.push("/dashboard")}
+            onClick={handleDashboardClick}
             className="px-6 py-3 bg-primary text-white font-bold text-xs rounded-xl shadow-md hover:bg-primary-container transition-all cursor-pointer inline-flex items-center gap-2"
           >
             <span>Launch LeadFlow Dashboard</span>
@@ -378,7 +388,7 @@ export default function HomePage() {
 
           <div className="pt-4 flex justify-center">
             <button
-              onClick={() => router.push("/dashboard")}
+              onClick={handleDashboardClick}
               className="px-8 py-4 bg-gradient-to-r from-primary via-primary-container to-secondary text-white font-extrabold text-sm rounded-2xl shadow-2xl hover:scale-105 transition-transform cursor-pointer flex items-center gap-2"
             >
               <span>Try LeadFlow Now</span>
@@ -398,7 +408,7 @@ export default function HomePage() {
           </div>
 
           <div className="flex items-center gap-6">
-            <button onClick={() => router.push("/dashboard")} className="hover:text-white transition-colors cursor-pointer">
+            <button onClick={handleDashboardClick} className="hover:text-white transition-colors cursor-pointer">
               Dashboard
             </button>
             <a href="#features" className="hover:text-white transition-colors">
