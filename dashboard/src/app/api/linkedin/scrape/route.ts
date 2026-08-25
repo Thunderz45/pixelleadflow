@@ -56,163 +56,85 @@ function categorizeProfile(headline: string, summary: string, title: string, ski
   return categories.length > 0 ? categories : ["Professional"];
 }
 
-// Sample dataset fallback for fast testing or offline demo queries
-const SAMPLE_PROFILES: LinkedInProfile[] = [
-  {
-    id: "link-1",
-    fullName: "Alex Rivera",
-    headline: "Senior AI/ML Engineer | Generative AI & LLM Systems",
-    currentCompany: "NeuralScale AI",
-    jobTitle: "Senior AI Engineer",
-    location: "San Francisco, CA",
-    summary: "Architecting enterprise LLMs and deep learning pipelines. Passionate about AI agents and NLP automation.",
-    profileUrl: "https://www.linkedin.com/in/alex-rivera-ai",
-    avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150",
-    email: "alex.rivera@neuralscale.io",
-    categories: ["AI & ML", "Developer"],
-    skills: ["Python", "PyTorch", "LangChain", "LLMs", "TensorFlow"],
-  },
-  {
-    id: "link-2",
-    fullName: "Sarah Chen",
-    headline: "Full Stack Developer | React, Node.js & Cloud Architecture",
-    currentCompany: "DevPulse Inc",
-    jobTitle: "Lead Full Stack Developer",
-    location: "Austin, TX",
-    summary: "Building high-performance SaaS applications with Next.js, React, Node.js, and AWS.",
-    profileUrl: "https://www.linkedin.com/in/sarah-chen-dev",
-    avatarUrl: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150",
-    email: "sarah.chen@devpulse.com",
-    categories: ["Developer"],
-    skills: ["React", "Next.js", "TypeScript", "Node.js", "GraphQL"],
-  },
-  {
-    id: "link-3",
-    fullName: "Marcus Vance",
-    headline: "Head of Product Design | UI/UX & Design Systems",
-    currentCompany: "PixelCraft Studio",
-    jobTitle: "Product Designer",
-    location: "New York, NY",
-    summary: "Crafting intuitive user interfaces and modern design systems for B2B SaaS platforms.",
-    profileUrl: "https://www.linkedin.com/in/marcus-vance-design",
-    avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150",
-    email: "marcus@pixelcraft.design",
-    categories: ["Designer"],
-    skills: ["Figma", "UI/UX", "Design Systems", "Prototyping", "User Research"],
-  },
-  {
-    id: "link-4",
-    fullName: "Elena Rostova",
-    headline: "VP of Sales & Revenue Growth | B2B SaaS Expansion",
-    currentCompany: "CloudScale HQ",
-    jobTitle: "VP of Sales",
-    location: "Chicago, IL",
-    summary: "Driving enterprise outbound sales strategies and scaling revenue operations across Global 2000 accounts.",
-    profileUrl: "https://www.linkedin.com/in/elena-rostova-sales",
-    avatarUrl: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150",
-    email: "elena@cloudscale.io",
-    categories: ["Sales", "Executive"],
-    skills: ["B2B Sales", "SaaS Growth", "Pipeline Management", "Enterprise Sales"],
-  },
-  {
-    id: "link-5",
-    fullName: "David Sterling",
-    headline: "Founder & CTO | AI Agents & Autonomous Workflows",
-    currentCompany: "Agentic AI Labs",
-    jobTitle: "Founder & CTO",
-    location: "Seattle, WA",
-    summary: "Building autonomous AI agent infrastructure for enterprise workflows. Ex-Google AI researcher.",
-    profileUrl: "https://www.linkedin.com/in/david-sterling-cto",
-    avatarUrl: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150",
-    email: "david@agentic.ai",
-    categories: ["AI & ML", "Executive", "Developer"],
-    skills: ["AI Systems", "System Architecture", "Python", "LLMs", "Leadership"],
-  },
-  {
-    id: "link-6",
-    fullName: "Priya Sharma",
-    headline: "Growth Marketing Manager | Organic Acquisition & Brand",
-    currentCompany: "Nexus Growth",
-    jobTitle: "Growth Marketer",
-    location: "Boston, MA",
-    summary: "Specializing in SEO, demand generation, content strategy, and viral customer acquisition.",
-    profileUrl: "https://www.linkedin.com/in/priya-sharma-marketing",
-    avatarUrl: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150",
-    email: "priya@nexusgrowth.co",
-    categories: ["Marketing"],
-    skills: ["SEO", "Content Marketing", "Growth Hacking", "Google Analytics", "Copywriting"],
-  },
-];
-
 export async function POST(req: Request) {
   try {
-    const { profileUrls, keyword, categoryFilter } = await req.json();
+    const { profileUrls, keyword, location, quantity, categoryFilter } = await req.json();
+    const maxResults = typeof quantity === "number" && quantity > 0 ? Math.min(quantity, 100) : 10;
 
-    // 1. If explicit profile URLs are passed, try calling Apify Actor run
+    // 1. Prepare Apify Actor payload
+    let apifyPayload: any = {};
+
     if (profileUrls && Array.isArray(profileUrls) && profileUrls.length > 0) {
-      try {
-        const apifyUrl = `https://api.apify.com/v2/acts/dev_fusion~linkedin-profile-scraper/run-sync-get-dataset-items?token=${APIFY_TOKEN}`;
-        
-        const apifyRes = await fetch(apifyUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ profileUrls }),
-        });
-
-        if (apifyRes.ok) {
-          const items = await apifyRes.json();
-          if (Array.isArray(items) && items.length > 0) {
-            const parsedProfiles: LinkedInProfile[] = items.map((item: any, idx: number) => {
-              const headline = item.headline || item.title || "";
-              const summary = item.summary || item.about || "";
-              const title = item.jobTitle || item.occupation || "";
-              const skills = Array.isArray(item.skills) ? item.skills : [];
-
-              return {
-                id: item.id || `apify-${idx}-${Date.now()}`,
-                fullName: item.fullName || item.name || "LinkedIn User",
-                headline: headline || "Professional on LinkedIn",
-                currentCompany: item.company || item.currentCompany || "N/A",
-                jobTitle: title || "Professional",
-                location: item.location || "Global",
-                summary: summary || "No description provided.",
-                profileUrl: item.url || item.profileUrl || profileUrls[idx] || "#",
-                avatarUrl: item.profilePicture || item.avatarUrl || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150",
-                email: item.email || item.contactInfo?.email,
-                phone: item.phone || item.contactInfo?.phone,
-                skills,
-                categories: categorizeProfile(headline, summary, title, skills),
-              };
-            });
-
-            return NextResponse.json({ profiles: parsedProfiles, source: "apify" });
-          }
-        }
-      } catch (apifyErr) {
-        console.error("Apify actor run error, falling back to smart catalog:", apifyErr);
-      }
+      apifyPayload.profileUrls = profileUrls.slice(0, maxResults);
+    } else {
+      apifyPayload = {
+        searchKeyword: keyword || "Software Engineer",
+        location: location || "",
+        limit: maxResults,
+      };
     }
 
-    // 2. Filter sample dataset based on keyword search or category filter
-    let results = [...SAMPLE_PROFILES];
+    // Call Apify LinkedIn Profile Scraper actor
+    const apifyUrl = `https://api.apify.com/v2/acts/dev_fusion~linkedin-profile-scraper/run-sync-get-dataset-items?token=${APIFY_TOKEN}&timeout=60`;
+    
+    let parsedProfiles: LinkedInProfile[] = [];
 
-    if (keyword && keyword.trim()) {
-      const q = keyword.toLowerCase();
-      results = results.filter(
-        (p) =>
-          p.fullName.toLowerCase().includes(q) ||
-          p.headline.toLowerCase().includes(q) ||
-          p.jobTitle.toLowerCase().includes(q) ||
-          p.summary.toLowerCase().includes(q) ||
-          p.skills.some((s) => s.toLowerCase().includes(q))
-      );
+    try {
+      const apifyRes = await fetch(apifyUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(apifyPayload),
+      });
+
+      if (apifyRes.ok) {
+        const items = await apifyRes.json();
+        if (Array.isArray(items) && items.length > 0) {
+          parsedProfiles = items.map((item: any, idx: number) => {
+            const headline = item.headline || item.title || item.occupation || "";
+            const summary = item.summary || item.about || item.description || "";
+            const title = item.jobTitle || item.occupation || headline || "Professional";
+            const skills = Array.isArray(item.skills) ? item.skills : [];
+            const company = item.company || item.currentCompany || item.experience?.[0]?.companyName || "N/A";
+            const profileLoc = item.location || location || "Global";
+
+            return {
+              id: item.id || `apify-${idx}-${Date.now()}`,
+              fullName: item.fullName || item.name || item.first_name ? `${item.first_name} ${item.last_name || ""}` : "LinkedIn Professional",
+              headline: headline || `${title} at ${company}`,
+              currentCompany: company,
+              jobTitle: title,
+              location: profileLoc,
+              summary: summary || "Extracted LinkedIn profile record.",
+              profileUrl: item.url || item.profileUrl || (profileUrls && profileUrls[idx]) || "#",
+              avatarUrl: item.profilePicture || item.avatarUrl || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150",
+              email: item.email || item.contactInfo?.email,
+              phone: item.phone || item.contactInfo?.phone,
+              skills,
+              categories: categorizeProfile(headline, summary, title, skills),
+            };
+          });
+        }
+      }
+    } catch (apifyErr) {
+      console.error("Apify execution error:", apifyErr);
+    }
+
+    // 2. Filter parsed profiles by location and category if specified
+    let filtered = [...parsedProfiles];
+
+    if (location && location.trim()) {
+      const locQ = location.toLowerCase();
+      filtered = filtered.filter((p) => p.location.toLowerCase().includes(locQ));
     }
 
     if (categoryFilter && categoryFilter !== "All") {
-      results = results.filter((p) => p.categories.includes(categoryFilter));
+      filtered = filtered.filter((p) => p.categories.includes(categoryFilter));
     }
 
-    return NextResponse.json({ profiles: results, source: "leadflow_catalog" });
+    // Apply quantity limit slice
+    filtered = filtered.slice(0, maxResults);
+
+    return NextResponse.json({ profiles: filtered, count: filtered.length, source: "apify_live" });
   } catch (error: any) {
     console.error("Error in LinkedIn Scrape API:", error);
     return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });

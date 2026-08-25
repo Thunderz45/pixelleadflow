@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { LinkedInProfile } from "@/app/api/linkedin/scrape/route";
 import * as XLSX from "xlsx";
-import Link from "next/link";
 
 export default function LinkedInScraperPage() {
   const [keyword, setKeyword] = useState("");
+  const [locationInput, setLocationInput] = useState("");
+  const [quantity, setQuantity] = useState<number>(10);
   const [profileUrlInput, setProfileUrlInput] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [profiles, setProfiles] = useState<LinkedInProfile[]>([]);
@@ -24,72 +25,67 @@ export default function LinkedInScraperPage() {
     { id: "Executive", label: "Executives & Founders", icon: "military_tech" },
   ];
 
-  // Fetch initial profile directory
-  const fetchProfiles = async (searchQuery = "", category = selectedCategory) => {
+  // Fetch live profiles from Apify Scraper API
+  const fetchProfiles = async (
+    searchQuery = keyword,
+    loc = locationInput,
+    limitVal = quantity,
+    category = selectedCategory,
+    urls: string[] = []
+  ) => {
     setLoading(true);
+    setSearchSuccessAlert("");
+
     try {
       const res = await fetch("/api/linkedin/scrape", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           keyword: searchQuery,
+          location: loc,
+          quantity: limitVal,
           categoryFilter: category,
+          profileUrls: urls.length > 0 ? urls : undefined,
         }),
       });
 
       const data = await res.json();
       if (data.profiles) {
         setProfiles(data.profiles);
+        if (data.profiles.length > 0) {
+          setSearchSuccessAlert(`Successfully extracted & categorized ${data.profiles.length} LinkedIn profile(s)!`);
+        } else {
+          setSearchSuccessAlert("No live profiles matched your criteria. Try adjusting role keyword or location.");
+        }
       }
     } catch (err) {
-      console.error("Error loading LinkedIn profiles:", err);
+      console.error("Error running Apify LinkedIn scraper:", err);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchProfiles();
-  }, []);
-
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    fetchProfiles(keyword, selectedCategory);
+    fetchProfiles(keyword, locationInput, quantity, selectedCategory);
   };
 
   const handleCategorySelect = (catId: string) => {
     setSelectedCategory(catId);
-    fetchProfiles(keyword, catId);
+    if (profiles.length > 0) {
+      fetchProfiles(keyword, locationInput, quantity, catId);
+    }
   };
 
   const handleRunApifyUrlScrape = async () => {
     if (!profileUrlInput.trim()) return;
-    setLoading(true);
-    setSearchSuccessAlert("");
+    const urls = profileUrlInput
+      .split("\n")
+      .map((u) => u.trim())
+      .filter((u) => u.length > 0);
 
-    try {
-      const urls = profileUrlInput
-        .split("\n")
-        .map((u) => u.trim())
-        .filter((u) => u.length > 0);
-
-      const res = await fetch("/api/linkedin/scrape", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ profileUrls: urls }),
-      });
-
-      const data = await res.json();
-      if (data.profiles && data.profiles.length > 0) {
-        setProfiles((prev) => [...data.profiles, ...prev]);
-        setSearchSuccessAlert(`Successfully scraped ${data.profiles.length} profile(s) via Apify Scraper!`);
-        setProfileUrlInput("");
-      }
-    } catch (err) {
-      console.error("Apify Scrape Error:", err);
-    } finally {
-      setLoading(false);
-    }
+    await fetchProfiles(keyword, locationInput, quantity, selectedCategory, urls);
+    setProfileUrlInput("");
   };
 
   const handleSaveLead = (profileId: string) => {
@@ -128,13 +124,13 @@ export default function LinkedInScraperPage() {
             <span className="px-2.5 py-0.5 bg-blue-500/10 text-blue-600 text-[11px] font-bold rounded-full uppercase tracking-wider">
               Apify Integration Active
             </span>
-            <span className="text-xs text-on-surface-variant font-medium">• LinkedIn Profiles</span>
+            <span className="text-xs text-on-surface-variant font-medium">• Live LinkedIn Scraper</span>
           </div>
           <h2 className="font-headline-lg text-3xl font-extrabold text-on-surface mt-1">
             LinkedIn Profile Scraper
           </h2>
           <p className="text-body-lg text-on-surface-variant text-sm mt-1">
-            Extract, auto-categorize (Developers, AI, Sales, Executives), and export LinkedIn B2B leads.
+            Extract, filter by location, auto-categorize (Developers, AI, Sales, Executives), and export B2B leads.
           </p>
         </div>
 
@@ -150,27 +146,27 @@ export default function LinkedInScraperPage() {
         </div>
       </div>
 
-      {/* Scraper Input Box */}
-      <div className="bg-white rounded-2xl p-6 border border-outline-variant shadow-sm space-y-4">
+      {/* Scraper Control & Filters Box */}
+      <div className="bg-white rounded-2xl p-6 border border-outline-variant shadow-sm space-y-5">
         <h3 className="font-bold text-sm text-on-surface flex items-center gap-2">
-          <span className="material-symbols-outlined text-primary">search</span>
-          Discover & Scrape Profiles
+          <span className="material-symbols-outlined text-primary">tune</span>
+          Live Extraction Controls & Location Filters
         </h3>
 
         {searchSuccessAlert && (
-          <div className="p-3 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl text-xs font-semibold flex items-center gap-2 animate-fade-in">
-            <span className="material-symbols-outlined text-base">check_circle</span>
+          <div className="p-3 bg-blue-50 text-blue-800 border border-blue-200 rounded-xl text-xs font-semibold flex items-center gap-2 animate-fade-in">
+            <span className="material-symbols-outlined text-base">info</span>
             {searchSuccessAlert}
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          
-          {/* Keyword Search */}
-          <form onSubmit={handleSearchSubmit} className="lg:col-span-2 space-y-3">
-            <label className="text-xs font-bold text-on-surface-variant">Filter by Role or Keyword</label>
-            <div className="flex gap-2">
-              <div className="relative flex-1">
+        <form onSubmit={handleSearchSubmit} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            
+            {/* Role / Keyword Search */}
+            <div className="space-y-1.5 md:col-span-2">
+              <label className="text-xs font-bold text-on-surface-variant">Role / Keyword Search</label>
+              <div className="relative">
                 <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-base">
                   search
                 </span>
@@ -179,40 +175,84 @@ export default function LinkedInScraperPage() {
                   value={keyword}
                   onChange={(e) => setKeyword(e.target.value)}
                   placeholder="e.g. AI Engineer, React Developer, Sales VP..."
-                  className="w-full bg-surface-container-low border border-outline-variant rounded-xl pl-9 pr-4 py-2 text-xs outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                  className="w-full bg-surface-container-low border border-outline-variant rounded-xl pl-9 pr-4 py-2.5 text-xs outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                 />
               </div>
-              <button
-                type="submit"
-                className="px-4 py-2 bg-primary text-white rounded-xl font-bold text-xs hover:bg-primary-container transition-all cursor-pointer shadow-xs"
-              >
-                Filter Leads
-              </button>
             </div>
-          </form>
 
-          {/* Apify Direct Profile URL Scraper */}
-          <div className="space-y-3">
-            <label className="text-xs font-bold text-on-surface-variant">Apify Direct URL Scraper</label>
-            <div className="flex gap-2">
+            {/* Location Filter */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-on-surface-variant">Target Location Filter</label>
+              <div className="relative">
+                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-base">
+                  location_on
+                </span>
+                <input
+                  type="text"
+                  value={locationInput}
+                  onChange={(e) => setLocationInput(e.target.value)}
+                  placeholder="e.g. San Francisco, Austin, London..."
+                  className="w-full bg-surface-container-low border border-outline-variant rounded-xl pl-9 pr-4 py-2.5 text-xs outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                />
+              </div>
+            </div>
+
+            {/* Quantity Limit Dropdown */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-on-surface-variant">Max Quantity Limit</label>
+              <div className="relative">
+                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-base">
+                  format_list_numbered
+                </span>
+                <select
+                  value={quantity}
+                  onChange={(e) => setQuantity(Number(e.target.value))}
+                  className="w-full bg-surface-container-low border border-outline-variant rounded-xl pl-9 pr-4 py-2.5 text-xs outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all appearance-none cursor-pointer"
+                >
+                  <option value={5}>5 Leads</option>
+                  <option value={10}>10 Leads</option>
+                  <option value={25}>25 Leads</option>
+                  <option value={50}>50 Leads</option>
+                  <option value={100}>100 Leads</option>
+                </select>
+                <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-base pointer-events-none">
+                  expand_more
+                </span>
+              </div>
+            </div>
+
+          </div>
+
+          <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-outline-variant/40">
+            {/* Direct Profile URL input */}
+            <div className="flex-1 flex gap-2 max-w-xl">
               <input
                 type="text"
                 value={profileUrlInput}
                 onChange={(e) => setProfileUrlInput(e.target.value)}
-                placeholder="https://linkedin.com/in/username"
+                placeholder="Or paste direct LinkedIn profile URL (https://linkedin.com/in/...)"
                 className="flex-1 bg-surface-container-low border border-outline-variant rounded-xl px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
               />
               <button
+                type="button"
                 onClick={handleRunApifyUrlScrape}
                 disabled={loading || !profileUrlInput.trim()}
-                className="px-4 py-2 bg-secondary text-white rounded-xl font-bold text-xs hover:opacity-90 transition-all cursor-pointer disabled:opacity-50 shadow-xs whitespace-nowrap"
+                className="px-3 py-2 bg-surface-container-high border border-outline-variant text-on-surface font-bold text-xs hover:bg-primary/10 hover:text-primary transition-all rounded-xl cursor-pointer disabled:opacity-50 whitespace-nowrap"
               >
-                {loading ? "Scraping..." : "Scrape Apify"}
+                Scrape URL
               </button>
             </div>
-          </div>
 
-        </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-6 py-2.5 bg-primary text-white rounded-xl font-bold text-xs hover:bg-primary-container transition-all cursor-pointer shadow-md disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              <span className="material-symbols-outlined text-base">cloud_sync</span>
+              {loading ? "Extracting Leads..." : "Run Apify Scraper"}
+            </button>
+          </div>
+        </form>
       </div>
 
       {/* Category Filter Tabs */}
@@ -235,18 +275,23 @@ export default function LinkedInScraperPage() {
 
       {/* Profile Cards Grid */}
       {loading ? (
-        <div className="py-16 text-center space-y-3">
+        <div className="py-16 text-center space-y-3 bg-white rounded-2xl border border-outline-variant">
           <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-xs font-bold text-on-surface-variant animate-pulse">
-            EXTRACTING & AUTO-CATEGORIZING LINKEDIN PROFILES...
+          <p className="text-xs font-bold text-on-surface animate-pulse">
+            CONNECTING TO APIFY & EXTRACTING LINKEDIN PROFILES...
+          </p>
+          <p className="text-[11px] text-on-surface-variant font-mono">
+            Targeting: {keyword || "Software Engineer"} | Location: {locationInput || "Global"} | Limit: {quantity} Leads
           </p>
         </div>
       ) : profiles.length === 0 ? (
-        <div className="bg-white rounded-2xl p-12 text-center border border-outline-variant space-y-3">
-          <span className="material-symbols-outlined text-4xl text-on-surface-variant">person_search</span>
-          <h4 className="font-bold text-base text-on-surface">No LinkedIn Profiles Found</h4>
-          <p className="text-xs text-on-surface-variant max-w-sm mx-auto">
-            Try adjusting your search keywords or paste a LinkedIn profile URL to extract leads.
+        <div className="bg-white rounded-2xl p-12 text-center border border-outline-variant space-y-3 shadow-xs">
+          <div className="w-12 h-12 rounded-2xl bg-blue-50 text-primary flex items-center justify-center mx-auto">
+            <span className="material-symbols-outlined text-2xl">person_search</span>
+          </div>
+          <h4 className="font-bold text-base text-on-surface">No Profiles Extracted Yet</h4>
+          <p className="text-xs text-on-surface-variant max-w-md mx-auto leading-relaxed">
+            Enter a role keyword (e.g. <i>"AI Engineer"</i>, <i>"React Developer"</i>), enter a target location, select maximum quantity limit, and click <b>"Run Apify Scraper"</b> to extract live leads.
           </p>
         </div>
       ) : (
@@ -260,7 +305,7 @@ export default function LinkedInScraperPage() {
               >
                 <div className="space-y-3">
                   
-                  {/* Top Row: Avatar & Categories */}
+                  {/* Top Row: Avatar & Actions */}
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3">
                       <img
@@ -318,8 +363,8 @@ export default function LinkedInScraperPage() {
 
                   {/* Location & Email */}
                   <div className="space-y-1 text-[11px] text-on-surface-variant">
-                    <p className="flex items-center gap-1">
-                      <span className="material-symbols-outlined text-sm text-outline">location_on</span>
+                    <p className="flex items-center gap-1 font-medium">
+                      <span className="material-symbols-outlined text-sm text-primary">location_on</span>
                       {p.location}
                     </p>
                     {p.email && (
