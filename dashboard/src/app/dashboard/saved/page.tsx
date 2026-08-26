@@ -10,10 +10,13 @@ import {
   getDocs, 
   deleteDoc, 
   updateDoc,
+  setDoc,
+  getDoc,
   doc, 
   orderBy
 } from "firebase/firestore";
 import WebsitePrototypeModal from "@/components/website/WebsitePrototypeModal";
+import PricingModal from "@/components/subscription/PricingModal";
 
 interface Lead {
   id: string;
@@ -47,6 +50,11 @@ export default function SavedBusinessesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [rowsPerPage, setRowsPerPage] = useState(12);
 
+  // Subscription & Quota state
+  const [userTier, setUserTier] = useState<string>("free");
+  const [websiteQuota, setWebsiteQuota] = useState<number>(0);
+  const [isPricingModalOpen, setIsPricingModalOpen] = useState(false);
+
   // AI Website Generator state
   const [generatingId, setGeneratingId] = useState<string | null>(null);
   const [activeModal, setActiveModal] = useState<{
@@ -57,6 +65,12 @@ export default function SavedBusinessesPage() {
   } | null>(null);
 
   const handleGenerateWebsite = async (lead: Lead) => {
+    // Check if user has quota
+    if (websiteQuota <= 0) {
+      setIsPricingModalOpen(true);
+      return;
+    }
+
     setGeneratingId(lead.id);
     try {
       const res = await fetch("/api/website/generate", {
@@ -80,6 +94,14 @@ export default function SavedBusinessesPage() {
           businessName: lead.name,
           leadId: lead.id,
         });
+
+        // Decrement quota in Firestore and state
+        if (user) {
+          const newQ = Math.max(0, websiteQuota - 1);
+          setWebsiteQuota(newQ);
+          const userRef = doc(db, "users", user.uid);
+          await updateDoc(userRef, { websiteQuota: newQ }).catch(() => {});
+        }
       } else {
         alert(data.error || "Failed to generate website prototype.");
       }
@@ -87,6 +109,20 @@ export default function SavedBusinessesPage() {
       console.error("Error generating website prototype:", err);
     } finally {
       setGeneratingId(null);
+    }
+  };
+
+  const handleSubscriptionSuccess = async (newQuota: number) => {
+    setUserTier("pro");
+    setWebsiteQuota(newQuota);
+    if (user) {
+      const userRef = doc(db, "users", user.uid);
+      await setDoc(userRef, {
+        tier: "pro",
+        websiteQuota: newQuota,
+        subscriptionStatus: "active",
+        updatedAt: new Date(),
+      }, { merge: true }).catch(() => {});
     }
   };
 
@@ -111,6 +147,19 @@ export default function SavedBusinessesPage() {
     if (!user) return;
     try {
       setLoading(true);
+
+      // Load user profile & subscription tier
+      try {
+        const userSnap = await getDoc(doc(db, "users", user.uid));
+        if (userSnap.exists()) {
+          const uData = userSnap.data();
+          const t = uData.tier || "free";
+          setUserTier(t);
+          setWebsiteQuota(typeof uData.websiteQuota === "number" ? uData.websiteQuota : (t === "pro" ? 5 : 0));
+        }
+      } catch (uErr) {
+        console.error("User profile load error:", uErr);
+      }
       // Load projects for project drop-down
       const projSnap = await getDocs(query(collection(db, "projects"), where("userId", "==", user.uid)));
       const projList: ProjectFilter[] = [];
@@ -398,6 +447,14 @@ export default function SavedBusinessesPage() {
                             <span className="material-symbols-outlined text-[12px]">auto_awesome</span>
                           </button>
                         </div>
+                      ) : websiteQuota <= 0 ? (
+                        <button
+                          onClick={() => setIsPricingModalOpen(true)}
+                          className="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-[11px] font-bold shadow-xs transition-all flex items-center gap-1 cursor-pointer whitespace-nowrap"
+                        >
+                          <span className="material-symbols-outlined text-[13px]">lock</span>
+                          Unlock 5 Websites (Pro)
+                        </button>
                       ) : (
                         <button
                           onClick={() => handleGenerateWebsite(lead)}
@@ -407,7 +464,7 @@ export default function SavedBusinessesPage() {
                           <span className="material-symbols-outlined text-[13px]">
                             {generatingId === lead.id ? "sync" : "auto_awesome"}
                           </span>
-                          {generatingId === lead.id ? "Generating..." : "Generate Website"}
+                          {generatingId === lead.id ? "Generating..." : `Generate Website (${websiteQuota}/5)`}
                         </button>
                       )}
                     </td>
@@ -474,6 +531,15 @@ export default function SavedBusinessesPage() {
           onSaveToLead={handleSavePrototypeToLead}
         />
       )}
+
+      {/* Razorpay Subscription Pricing Modal */}
+      <PricingModal
+        isOpen={isPricingModalOpen}
+        onClose={() => setIsPricingModalOpen(false)}
+        userId={user?.uid}
+        userEmail={user?.email || ""}
+        onSuccess={handleSubscriptionSuccess}
+      />
 
     </div>
   );

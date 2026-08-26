@@ -6,12 +6,14 @@ import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { Menu, X } from "lucide-react"; // Fallbacks for mobile toggles
 import PixelChat from "@/components/chat/PixelChat";
+import PricingModal from "@/components/subscription/PricingModal";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, loading, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isPricingModalOpen, setIsPricingModalOpen] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -132,6 +134,29 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           );
         })}
       </nav>
+
+      {/* Pro Subscription Sidebar Card */}
+      <div className="mx-4 mb-3 p-3 bg-gradient-to-r from-primary/10 via-primary-container/10 to-secondary/10 border border-primary/20 rounded-xl space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] font-extrabold uppercase text-primary tracking-wider flex items-center gap-1">
+            <span className="material-symbols-outlined text-xs">auto_awesome</span>
+            Pro Monthly
+          </span>
+          <span className="text-[9px] font-bold bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded">
+            ₹999/mo
+          </span>
+        </div>
+        <p className="text-[11px] text-on-surface-variant font-medium leading-tight">
+          Unlock 5 AI Website Prototype Generations per month.
+        </p>
+        <button
+          onClick={() => setIsPricingModalOpen(true)}
+          className="w-full py-1.5 bg-primary text-white rounded-lg font-bold text-xs shadow-xs hover:bg-primary-container transition-all cursor-pointer flex items-center justify-center gap-1"
+        >
+          <span className="material-symbols-outlined text-sm">bolt</span>
+          Upgrade to Pro
+        </button>
+      </div>
 
       {/* User profile section */}
       <div className="px-4 mt-auto pt-4 border-t border-outline-variant">
@@ -256,6 +281,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </main>
       </div>
+
+      {/* Razorpay Subscription Pricing Modal */}
+      <PricingModal
+        isOpen={isPricingModalOpen}
+        onClose={() => setIsPricingModalOpen(false)}
+        userId={user.uid}
+        userEmail={user.email || ""}
+        onSuccess={() => setIsPricingModalOpen(false)}
+      />
 
     </div>
   );
