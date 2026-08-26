@@ -7,6 +7,18 @@ import Link from "next/link";
 import { Menu, X } from "lucide-react"; // Fallbacks for mobile toggles
 import PixelChat from "@/components/chat/PixelChat";
 import PricingModal from "@/components/subscription/PricingModal";
+import { db } from "@/lib/firebase";
+import { collection, getDocs, query, orderBy, limit } from "firebase/firestore";
+
+interface SystemNotif {
+  id: string;
+  title: string;
+  message: string;
+  target: string;
+  targetEmail?: string;
+  createdAt?: any;
+  sender?: string;
+}
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, loading, logout } = useAuth();
@@ -15,11 +27,52 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isPricingModalOpen, setIsPricingModalOpen] = useState(false);
 
+  // Notifications State
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [notifications, setNotifications] = useState<SystemNotif[]>([]);
+  const [hasUnread, setHasUnread] = useState(false);
+
+  const isAdmin = user?.email?.toLowerCase() === "admin@gmail.com";
+
   useEffect(() => {
     if (!loading && !user) {
       router.push("/login");
     }
   }, [user, loading, router]);
+
+  useEffect(() => {
+    const fetchNotifs = async () => {
+      if (!user) return;
+      try {
+        const snap = await getDocs(query(collection(db, "notifications"), orderBy("createdAt", "desc"), limit(10)));
+        const list: SystemNotif[] = [];
+        snap.forEach((d) => {
+          const data = d.data();
+          // Filter applicable notifications
+          if (
+            data.target === "all" ||
+            (data.target === "email" && data.targetEmail === user.email) ||
+            isAdmin
+          ) {
+            list.push({
+              id: d.id,
+              title: data.title || "System Announcement",
+              message: data.message || "",
+              target: data.target || "all",
+              targetEmail: data.targetEmail,
+              sender: data.sender || "LeadFlow Admin",
+              createdAt: data.createdAt?.toDate() || new Date(),
+            });
+          }
+        });
+        setNotifications(list);
+        if (list.length > 0) setHasUnread(true);
+      } catch (err) {
+        console.error("Error fetching notifications:", err);
+      }
+    };
+    fetchNotifs();
+  }, [user, isAdmin]);
 
   if (loading || !user) {
     return (
@@ -44,7 +97,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   ];
 
   const utilityItems = [
-    { name: "Admin Panel", href: "/dashboard/admin", icon: "admin_panel_settings" },
+    ...(isAdmin ? [{ name: "Admin Panel", href: "/dashboard/admin", icon: "admin_panel_settings" }] : []),
     { name: "Settings", href: "/dashboard/settings", icon: "settings" },
     { name: "Profile", href: "/dashboard/profile", icon: "account_circle" },
     { name: "Privacy Policy", href: "/dashboard/privacy", icon: "policy" },
@@ -247,11 +300,61 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
           <div className="flex items-center gap-4 md:gap-6">
             <div className="flex items-center gap-4 border-r border-outline-variant pr-4 md:pr-6">
-              <button className="text-on-surface-variant hover:text-primary transition-colors flex items-center relative p-1.5 rounded-full hover:bg-surface-container-high">
-                <span className="material-symbols-outlined text-[22px]">notifications</span>
-                <span className="absolute top-1 right-1 w-2 h-2 bg-error rounded-full"></span>
-              </button>
-              <button className="text-on-surface-variant hover:text-primary transition-colors flex items-center p-1.5 rounded-full hover:bg-surface-container-high">
+              <div className="relative">
+                <button
+                  onClick={() => {
+                    setNotifOpen(!notifOpen);
+                    setHasUnread(false);
+                  }}
+                  title="Notifications"
+                  className="text-on-surface-variant hover:text-primary transition-colors flex items-center relative p-1.5 rounded-full hover:bg-surface-container-high cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[22px]">notifications</span>
+                  {hasUnread && (
+                    <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-rose-500 rounded-full animate-ping"></span>
+                  )}
+                  {hasUnread && (
+                    <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-rose-500 rounded-full"></span>
+                  )}
+                </button>
+
+                {/* Notifications Popover Dropdown */}
+                {notifOpen && (
+                  <div className="absolute right-0 top-10 w-80 sm:w-96 bg-white rounded-2xl border border-outline-variant shadow-2xl z-50 p-4 space-y-3 animate-fade-in">
+                    <div className="flex items-center justify-between border-b border-outline-variant pb-2">
+                      <div className="flex items-center gap-1.5 font-bold text-xs text-on-surface">
+                        <span className="material-symbols-outlined text-primary text-base">notifications</span>
+                        <span>System Notifications</span>
+                      </div>
+                      <span className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                        {notifications.length} Messages
+                      </span>
+                    </div>
+
+                    <div className="max-h-72 overflow-y-auto divide-y divide-outline-variant/60 space-y-2 pr-1">
+                      {notifications.length === 0 ? (
+                        <div className="py-8 text-center text-on-surface-variant text-xs font-medium">
+                          No notifications at this time.
+                        </div>
+                      ) : (
+                        notifications.map((n) => (
+                          <div key={n.id} className="pt-2 first:pt-0 space-y-1">
+                            <div className="flex items-center justify-between">
+                              <p className="font-bold text-xs text-on-surface">{n.title}</p>
+                              <span className="text-[9px] text-outline">
+                                {n.createdAt ? new Date(n.createdAt).toLocaleDateString() : "Just now"}
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-on-surface-variant leading-tight">{n.message}</p>
+                            <span className="text-[9px] font-semibold text-primary uppercase">From: {n.sender}</span>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+              <button className="text-on-surface-variant hover:text-primary transition-colors flex items-center p-1.5 rounded-full hover:bg-surface-container-high cursor-pointer">
                 <span className="material-symbols-outlined text-[22px]">help_outline</span>
               </button>
             </div>

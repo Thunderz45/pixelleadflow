@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { db } from "@/lib/firebase";
 import { 
   collection, 
@@ -8,9 +9,7 @@ import {
   doc, 
   updateDoc, 
   addDoc, 
-  serverTimestamp,
-  query,
-  orderBy
+  serverTimestamp
 } from "firebase/firestore";
 import { useAuth } from "@/context/auth-context";
 
@@ -29,12 +28,22 @@ interface UserRecord {
 }
 
 export default function AdminDashboardPage() {
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, loading: authLoading } = useAuth();
+  const router = useRouter();
   
   const [users, setUsers] = useState<UserRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTierFilter, setSelectedTierFilter] = useState("all");
+
+  // Admin authorization check
+  useEffect(() => {
+    if (!authLoading) {
+      if (!currentUser || currentUser.email !== "admin@gmail.com") {
+        router.push("/dashboard");
+      }
+    }
+  }, [currentUser, authLoading, router]);
   
   // Notification Modal State
   const [isNotifModalOpen, setIsNotifModalOpen] = useState(false);

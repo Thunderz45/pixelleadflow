@@ -83,6 +83,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await signInWithEmailAndPassword(auth, emailStr, passwordStr);
     } catch (error: any) {
+      // If admin account does not exist yet in Firebase, auto-create admin account
+      if (emailStr.toLowerCase() === "admin@gmail.com" && passwordStr === "admin") {
+        try {
+          const res = await createUserWithEmailAndPassword(auth, emailStr, passwordStr);
+          if (res.user) {
+            await updateProfile(res.user, { displayName: "LeadFlow Admin" });
+            const userRef = doc(db, "users", res.user.uid);
+            await setDoc(userRef, {
+              uid: res.user.uid,
+              email: "admin@gmail.com",
+              displayName: "LeadFlow Admin",
+              role: "admin",
+              tier: "pro",
+              leadsQuota: 9999,
+              websiteQuota: 9999,
+              subscriptionStatus: "active",
+              createdAt: serverTimestamp(),
+              lastLogin: serverTimestamp(),
+            }, { merge: true });
+          }
+          setLoading(false);
+          return;
+        } catch (createErr) {
+          console.error("Admin auto-create error:", createErr);
+        }
+      }
       console.error("Email login failed:", error);
       setLoading(false);
       throw error;
