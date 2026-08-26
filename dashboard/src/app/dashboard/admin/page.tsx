@@ -93,19 +93,22 @@ export default function AdminDashboardPage() {
 
   const handleGrantSubscription = async (targetUser: UserRecord) => {
     try {
-      const userRef = doc(db, "users", targetUser.id);
-      await updateDoc(userRef, {
-        tier: "pro",
-        websiteQuota: 5,
-        leadsQuota: 100,
-        subscriptionStatus: "active",
-        updatedAt: serverTimestamp(),
+      // Create subscription invitation notification for user
+      await addDoc(collection(db, "notifications"), {
+        type: "subscription_invite",
+        status: "pending",
+        target: "email",
+        targetEmail: targetUser.email,
+        title: "🎁 Pro Subscription Gift Granted!",
+        message: "Admin has gifted you a 1 Month Pro Subscription (100 Leads Scraping & 5 AI Website Generations / Mo). Please accept to activate your Pro tier!",
+        sender: currentUser?.email || "LeadFlow Admin",
+        createdAt: serverTimestamp(),
       });
 
-      setAlertSuccess(`Granted Pro Subscription (100 Leads & 5 Websites) to ${targetUser.email}!`);
+      setAlertSuccess(`Sent Pro Subscription invitation to ${targetUser.email}! User can Accept or Reject on their notification bell.`);
       loadUsers();
     } catch (err) {
-      console.error("Error granting subscription:", err);
+      console.error("Error sending subscription invitation:", err);
     }
   };
 

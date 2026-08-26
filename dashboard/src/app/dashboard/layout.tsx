@@ -8,7 +8,7 @@ import { Menu, X } from "lucide-react"; // Fallbacks for mobile toggles
 import PixelChat from "@/components/chat/PixelChat";
 import PricingModal from "@/components/subscription/PricingModal";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, query, orderBy, limit } from "firebase/firestore";
+import { collection, getDocs, query, orderBy, limit, doc, updateDoc, serverTimestamp } from "firebase/firestore";
 
 interface SystemNotif {
   id: string;
@@ -16,6 +16,8 @@ interface SystemNotif {
   message: string;
   target: string;
   targetEmail?: string;
+  type?: string;
+  status?: string;
   createdAt?: any;
   sender?: string;
 }
@@ -40,39 +42,88 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
   }, [user, loading, router]);
 
+  const fetchNotifs = async () => {
+    if (!user) return;
+    try {
+      const snap = await getDocs(query(collection(db, "notifications"), orderBy("createdAt", "desc"), limit(10)));
+      const list: SystemNotif[] = [];
+      snap.forEach((d) => {
+        const data = d.data();
+        // Filter applicable notifications
+        if (
+          data.target === "all" ||
+          (data.target === "email" && data.targetEmail === user.email) ||
+          isAdmin
+        ) {
+          list.push({
+            id: d.id,
+            title: data.title || "System Announcement",
+            message: data.message || "",
+            target: data.target || "all",
+            targetEmail: data.targetEmail,
+            type: data.type || "general",
+            status: data.status || "read",
+            sender: data.sender || "LeadFlow Admin",
+            createdAt: data.createdAt?.toDate() || new Date(),
+          });
+        }
+      });
+      setNotifications(list);
+      if (list.length > 0) setHasUnread(true);
+    } catch (err) {
+      console.error("Error fetching notifications:", err);
+    }
+  };
+
   useEffect(() => {
-    const fetchNotifs = async () => {
-      if (!user) return;
-      try {
-        const snap = await getDocs(query(collection(db, "notifications"), orderBy("createdAt", "desc"), limit(10)));
-        const list: SystemNotif[] = [];
-        snap.forEach((d) => {
-          const data = d.data();
-          // Filter applicable notifications
-          if (
-            data.target === "all" ||
-            (data.target === "email" && data.targetEmail === user.email) ||
-            isAdmin
-          ) {
-            list.push({
-              id: d.id,
-              title: data.title || "System Announcement",
-              message: data.message || "",
-              target: data.target || "all",
-              targetEmail: data.targetEmail,
-              sender: data.sender || "LeadFlow Admin",
-              createdAt: data.createdAt?.toDate() || new Date(),
-            });
-          }
-        });
-        setNotifications(list);
-        if (list.length > 0) setHasUnread(true);
-      } catch (err) {
-        console.error("Error fetching notifications:", err);
-      }
-    };
     fetchNotifs();
   }, [user, isAdmin]);
+
+  const handleAcceptInvite = async (notifId: string) => {
+    if (!user) return;
+    try {
+      // 1. Update user profile to PRO tier with 100 leads & 5 website quota
+      const userRef = doc(db, "users", user.uid);
+      await updateDoc(userRef, {
+        tier: "pro",
+        websiteQuota: 5,
+        leadsQuota: 100,
+        subscriptionStatus: "active",
+        updatedAt: serverTimestamp(),
+      });
+
+      // 2. Update notification status to accepted
+      const notifRef = doc(db, "notifications", notifId);
+      await updateDoc(notifRef, {
+        status: "accepted",
+        updatedAt: serverTimestamp(),
+      });
+
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === notifId ? { ...n, status: "accepted" } : n))
+      );
+
+      alert("🎉 Pro Subscription Gift Activated! You now have 100 Leads Scraping & 5 AI Website Prototype Generations.");
+    } catch (err) {
+      console.error("Error accepting subscription gift:", err);
+    }
+  };
+
+  const handleRejectInvite = async (notifId: string) => {
+    try {
+      const notifRef = doc(db, "notifications", notifId);
+      await updateDoc(notifRef, {
+        status: "rejected",
+        updatedAt: serverTimestamp(),
+      });
+
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === notifId ? { ...n, status: "rejected" } : n))
+      );
+    } catch (err) {
+      console.error("Error rejecting subscription gift:", err);
+    }
+  };
 
   if (loading || !user) {
     return (
@@ -346,7 +397,41 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                               </span>
                             </div>
                             <p className="text-[11px] text-on-surface-variant leading-tight">{n.message}</p>
-                            <span className="text-[9px] font-semibold text-primary uppercase">From: {n.sender}</span>
+
+                            {/* Accept / Reject controls for Subscription Invite */}
+                            {n.type === "subscription_invite" && (
+                              <div className="pt-1.5 flex items-center gap-2">
+                                {n.status === "pending" ? (
+                                  <>
+                                    <button
+                                      onClick={() => handleAcceptInvite(n.id)}
+                                      className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-[10px] font-extrabold shadow-xs transition-all cursor-pointer flex items-center gap-1"
+                                    >
+                                      <span className="material-symbols-outlined text-[12px]">check</span>
+                                      Accept Subscription
+                                    </button>
+                                    <button
+                                      onClick={() => handleRejectInvite(n.id)}
+                                      className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[10px] font-bold transition-all cursor-pointer"
+                                    >
+                                      Reject
+                                    </button>
+                                  </>
+                                ) : n.status === "accepted" ? (
+                                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+                                    <span className="material-symbols-outlined text-[12px]">check_circle</span>
+                                    Subscription Accepted & Active
+                                  </span>
+                                ) : (
+                                  <span className="text-[10px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+                                    <span className="material-symbols-outlined text-[12px]">cancel</span>
+                                    Offer Declined
+                                  </span>
+                                )}
+                              </div>
+                            )}
+
+                            <span className="text-[9px] font-semibold text-primary uppercase block">From: {n.sender}</span>
                           </div>
                         ))
                       )}
