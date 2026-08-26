@@ -44,6 +44,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   ];
 
   const utilityItems = [
+    { name: "Admin Panel", href: "/dashboard/admin", icon: "admin_panel_settings" },
     { name: "Settings", href: "/dashboard/settings", icon: "settings" },
     { name: "Profile", href: "/dashboard/profile", icon: "account_circle" },
     { name: "Privacy Policy", href: "/dashboard/privacy", icon: "policy" },
