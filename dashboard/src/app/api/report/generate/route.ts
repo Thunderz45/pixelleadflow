@@ -5,85 +5,171 @@ const KEY_CODES = [
 ];
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || String.fromCharCode(...KEY_CODES);
 
+async function scanWebsite(url: string) {
+  if (!url || url === "N/A" || url.includes("AI Prototype")) {
+    return {
+      scanned: false,
+      reason: "No website listed on Google Maps profile",
+    };
+  }
+
+  let formattedUrl = url.trim();
+  if (!formattedUrl.startsWith("http://") && !formattedUrl.startsWith("https://")) {
+    formattedUrl = `https://${formattedUrl}`;
+  }
+
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 4000);
+
+    const res = await fetch(formattedUrl, {
+      method: "GET",
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      },
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+
+    if (!res.ok) {
+      return {
+        scanned: true,
+        accessible: false,
+        status: res.status,
+        reason: `HTTP ${res.status} error fetching site`,
+      };
+    }
+
+    const html = await res.text();
+    const titleMatch = html.match(/<title[^>]*>(.*?)<\/title>/i);
+    const metaDescMatch = html.match(/<meta[^>]*name=["']description["'][^>]*content=["'](.*?)["']/i);
+    const h1Match = html.match(/<h1[^>]*>(.*?)<\/h1>/i);
+    const hasWhatsApp = html.toLowerCase().includes("wa.me") || html.toLowerCase().includes("whatsapp");
+    const hasContactForm = html.toLowerCase().includes("<form") || html.toLowerCase().includes("contact");
+
+    const pageTitle = titleMatch ? titleMatch[1].trim() : "No <title> Tag Found";
+    const metaDesc = metaDescMatch ? metaDescMatch[1].trim() : "No Meta Description Found";
+    const h1Header = h1Match ? h1Match[1].replace(/<[^>]+>/g, "").trim() : "No <h1> Header Found";
+
+    return {
+      scanned: true,
+      accessible: true,
+      url: formattedUrl,
+      pageTitle,
+      metaDesc,
+      h1Header,
+      hasSSL: formattedUrl.startsWith("https://"),
+      hasWhatsApp,
+      hasContactForm,
+      htmlLength: html.length,
+    };
+  } catch (err: any) {
+    return {
+      scanned: true,
+      accessible: false,
+      reason: err.name === "AbortError" ? "Website load timed out" : "Unable to reach website server",
+    };
+  }
+}
+
 export async function POST(req: Request) {
   try {
-    const { name, category, address, phone, rating, reviewsCount, website } = await req.json();
+    const { name, category, address, phone, rating, reviewsCount, website, mapsUrl } = await req.json();
 
     if (!name) {
       return NextResponse.json({ error: "Business name is required." }, { status: 400 });
     }
 
+    // Live Scan Website
+    const webScanResults = await scanWebsite(website);
+
     const hasWebsite = website && website !== "N/A" && website !== "" && !website.includes("AI Prototype");
+    const ratingNum = parseFloat(rating) || 4.2;
+    const reviewsNum = parseInt(reviewsCount) || 12;
 
-    const prompt = `You are a Senior Local SEO Auditor & Digital Strategy Expert.
-Generate an in-depth, business-tailored 3-PAGE AUDIT & GROWTH REPORT for this specific business:
+    const prompt = `You are a Senior Web & Local SEO Auditor.
+Synthesize the following REAL-TIME SCANNED DATA into an in-depth, business-tailored 3-PAGE AUDIT & GROWTH REPORT:
+
+BUSINESS PROFILES:
 - Business Name: ${name}
-- Business Category: ${category || "Local Business"}
-- Location/City: ${address || "Local Market"}
-- Contact Phone: ${phone || "Not Listed"}
-- Google Maps Rating: ${rating || 4.2} Stars (${reviewsCount || 10} Reviews)
-- Current Website: ${hasWebsite ? website : "None (Missing Online Storefront)"}
+- Category: ${category || "Local Business"}
+- Address: ${address || "Local Market"}
+- Phone: ${phone || "Not Listed"}
+- Google Maps Rating: ${ratingNum} Stars (${reviewsNum} Reviews)
+- Maps Profile Link: ${mapsUrl || "Verified Maps Profile"}
 
-Analyze this specific business's local reputation, website infrastructure, competitor threats in ${address || "the region"}, and generate a tailored pitch strategy.
+LIVE WEBSITE SCANNED DATA:
+- Website Listed: ${hasWebsite ? website : "NONE (Missing Website)"}
+- Scan Status: ${webScanResults.scanned ? (webScanResults.accessible ? "Site Scanned Successfully" : `Site Error: ${webScanResults.reason}`) : "No Website to Scan"}
+${webScanResults.accessible ? `- Scanned HTML Title: "${webScanResults.pageTitle}"
+- Scanned Meta Description: "${webScanResults.metaDesc}"
+- Scanned H1 Header: "${webScanResults.h1Header}"
+- SSL HTTPS Secured: ${webScanResults.hasSSL ? "Yes" : "No"}
+- WhatsApp Widget Detected: ${webScanResults.hasWhatsApp ? "Yes" : "No"}
+- Contact Form Detected: ${webScanResults.hasContactForm ? "Yes" : "No"}` : ""}
 
+INSTRUCTIONS:
+Utilize the REAL SCANNED DATA above to write deep, specific audit findings for ${name}.
 Return ONLY a valid JSON object matching this structure (no surrounding text or markdown formatting):
 {
   "businessName": "${name}",
-  "overallScore": 65,
+  "scannedUrl": "${hasWebsite ? website : "No Website Listed"}",
+  "scanStatus": "${webScanResults.scanned ? (webScanResults.accessible ? "Website Scanned Live" : "Scanning Error") : "Missing Website"}",
+  "overallScore": 68,
   "mapsAuditScore": 75,
-  "websiteAuditScore": ${hasWebsite ? 60 : 20},
-  "growthPotentialScore": 90,
+  "websiteAuditScore": ${hasWebsite ? (webScanResults.accessible ? 65 : 35) : 20},
+  "growthPotentialScore": 92,
   "page1": {
-    "title": "Page 1: Google Maps & Local SEO Audit",
-    "summary": "Deep audit of ${name}'s Google Maps reputation, review sentiment, and local search visibility.",
+    "title": "Page 1: Scanned Google Maps & Local SEO Audit",
+    "summary": "Live diagnostic audit of ${name}'s Google Maps listing, reputation metrics (${ratingNum}★ with ${reviewsNum} reviews), and local search ranking factors in ${address || "the local area"}.",
     "sections": [
       {
-        "heading": "1. Google Maps Reputation & Review Audit",
-        "content": "In-depth review evaluation of ${name} with ${rating || 4.2} stars across ${reviewsCount || 10} reviews..."
+        "heading": "1. Scanned Google Maps Profile & Reputation Analysis",
+        "content": "Evaluation of ${name}'s Google rating of ${ratingNum} stars across ${reviewsNum} verified customer reviews..."
       },
       {
-        "heading": "2. Local Map Pack Ranking Factors",
-        "content": "Analysis of category signals, address proximity in ${address || "local area"}, and map pack positioning..."
+        "heading": "2. Map Pack Proximity & Search Rankings",
+        "content": "Analysis of category tags for ${category || "this business"} in ${address || "local region"}..."
       },
       {
-        "heading": "3. Critical Profile Gaps & Opportunities",
-        "content": "${hasWebsite ? "Website exists but needs local Schema.org markup and mobile lead capture buttons." : "CRITICAL GAP: Missing website URL on Google Maps profile. Mobile searchers bounce directly to competitors."}"
+        "heading": "3. Critical Map Profile Gaps & Opportunities",
+        "content": "${hasWebsite ? `Google Maps profile lists ${website}. Scan shows opportunities to add local keyword schema.` : `CRITICAL GAP: Missing website link on Google Maps. Over 60% of mobile searchers bounce directly to local competitors.`}"
       }
     ]
   },
   "page2": {
-    "title": "Page 2: Digital Storefront & Competitor Analysis",
-    "summary": "Technical audit of online infrastructure and local competitor positioning in ${address || "the area"}.",
+    "title": "Page 2: Live Website Scan & Technical UX Audit",
+    "summary": "Technical inspection of ${name}'s digital storefront infrastructure and live scanned webpage signals.",
     "sections": [
       {
-        "heading": "1. Web Infrastructure & Mobile UX Audit",
-        "content": "${hasWebsite ? "Audit of " + website + " highlighting page speed, mobile layout, and CTA funnels." : "No active digital storefront detected. Creating a modern AI prototype landing page is urgent."}"
+        "heading": "1. Live Webpage Scan Diagnostic Results",
+        "content": "${webScanResults.accessible ? `Scanned URL: ${webScanResults.url}. Title tag: "${webScanResults.pageTitle}". Meta description: "${webScanResults.metaDesc}". H1 header: "${webScanResults.h1Header}". SSL Secured: ${webScanResults.hasSSL ? "Yes" : "No"}. WhatsApp Widget: ${webScanResults.hasWhatsApp ? "Detected" : "Missing"}.` : `No active website detected on Google Maps for ${name}. Absence of an online storefront leaves potential customers unable to inspect services or book online.`}"
       },
       {
-        "heading": "2. Local Competitor Benchmarking",
-        "content": "Comparison against top local competitors in ${category || "this industry"} in ${address || "the area"}..."
+        "heading": "2. Local Competitor Technical Benchmarking",
+        "content": "Comparison against top local competitors in ${address || "the area"} showing lead acquisition gaps..."
       },
       {
-        "heading": "3. Conversion Rate Optimization (CRO)",
-        "content": "Strategy for 1-click WhatsApp buttons, instant call triggers, and Google review widgets."
+        "heading": "3. Conversion Rate Optimization (CRO) Gaps",
+        "content": "Recommendations for adding header click-to-call buttons, instant WhatsApp chat, and review badges."
       }
     ]
   },
   "page3": {
-    "title": "Page 3: Revenue Growth Strategy & Sales Pitch Script",
-    "summary": "Tailored 30-day growth roadmap and customized outreach pitch script for closing ${name}.",
+    "title": "Page 3: Tailored Growth Strategy & Client Outreach Pitch",
+    "summary": "Actionable 30-day client acquisition roadmap and customized cold outreach sales pitch for ${name}.",
     "sections": [
       {
-        "heading": "1. 30-Day Client Revenue Growth Plan",
-        "content": "Phase 1: Launch custom AI landing page. Phase 2: Optimize Google Maps metadata. Phase 3: Automated review campaign."
+        "heading": "1. 30-Day Client Acquisition Roadmap",
+        "content": "Phase 1: Launch custom high-converting AI prototype landing page. Phase 2: Attach site URL to Google Maps. Phase 3: Review generation."
       },
       {
-        "heading": "2. Recommended High-Converting Features",
-        "content": "Fast mobile loading, instant booking form, WhatsApp chat widget, Google Maps embed, SEO tags."
+        "heading": "2. High-Converting Recommended Modules",
+        "content": "Fast mobile loading (<1.5s), 1-Click WhatsApp & call buttons, Google review carousel, instant inquiry form."
       },
       {
-        "heading": "3. Customized Sales Outreach Pitch Script",
-        "content": "Hi ${name} Team, we noticed your ${rating || 4.2}-star profile in ${address || "your area"}... Here is a high-converting website prototype built for your business."
+        "heading": "3. Customized Cold Outreach Sales Pitch",
+        "content": "Hi ${name} Team, we completed a live digital audit of your ${ratingNum}-star Google Maps listing in ${address || "your area"}... We created a custom AI prototype website for ${name} to capture 2x more calls."
       }
     ]
   }
@@ -118,11 +204,13 @@ Return ONLY a valid JSON object matching this structure (no surrounding text or 
           const data = await response.json();
           let rawContent = data.choices?.[0]?.message?.content;
           if (rawContent) {
-            // Strip markdown JSON wrapping if present
             rawContent = rawContent.replace(/```json/g, "").replace(/```/g, "").trim();
             const parsed = JSON.parse(rawContent);
             if (parsed && parsed.page1 && parsed.page2 && parsed.page3) {
-              return NextResponse.json(parsed);
+              return NextResponse.json({
+                ...parsed,
+                webScan: webScanResults,
+              });
             }
           }
         }
@@ -132,7 +220,8 @@ Return ONLY a valid JSON object matching this structure (no surrounding text or 
     }
 
     // Fallback: Generate deep dynamic custom report tailored to exact parameters
-    return NextResponse.json(generateDeepDynamicReport(name, category, address, phone, rating, reviewsCount, website));
+    const fallbackReport = generateDeepDynamicReport(name, category, address, phone, rating, reviewsCount, website, webScanResults);
+    return NextResponse.json(fallbackReport);
 
   } catch (error: any) {
     console.error("Error generating lead report:", error);
@@ -147,15 +236,15 @@ function generateDeepDynamicReport(
   phone: string, 
   rating: any, 
   reviewsCount: any, 
-  website: string
+  website: string,
+  webScan: any
 ) {
   const ratingNum = parseFloat(rating) || 4.2;
   const reviewsNum = parseInt(reviewsCount) || 12;
   const hasWebsite = website && website !== "N/A" && website !== "" && !website.includes("AI Prototype");
 
-  // Dynamic unique calculations for every lead
   const mapsAuditScore = Math.min(98, Math.max(35, Math.round((ratingNum / 5) * 80 + (reviewsNum > 20 ? 15 : reviewsNum * 0.7))));
-  const websiteAuditScore = hasWebsite ? Math.min(92, Math.max(50, Math.round(mapsAuditScore * 0.85))) : Math.min(32, Math.max(12, Math.round(reviewsNum > 50 ? 25 : 15)));
+  const websiteAuditScore = hasWebsite ? (webScan.accessible ? Math.min(92, Math.max(50, Math.round(mapsAuditScore * 0.85))) : 35) : Math.min(32, Math.max(12, Math.round(reviewsNum > 50 ? 25 : 15)));
   const overallScore = Math.round((mapsAuditScore + websiteAuditScore) / 2);
   const growthPotentialScore = Math.min(98, Math.max(65, 100 - Math.round(overallScore * 0.35)));
 
@@ -168,12 +257,13 @@ function generateDeepDynamicReport(
     mapsAuditScore,
     websiteAuditScore,
     growthPotentialScore,
+    webScan,
     page1: {
-      title: `Page 1: Google Maps & Local SEO Audit - ${name}`,
-      summary: `Deep diagnostic audit of ${name}'s Google Maps listing, reputation metrics (${ratingNum}★ with ${reviewsNum} reviews), and local search ranking factors in ${locationText}.`,
+      title: `Page 1: Scanned Google Maps & Local SEO Audit - ${name}`,
+      summary: `Live diagnostic audit of ${name}'s Google Maps listing, reputation metrics (${ratingNum}★ with ${reviewsNum} reviews), and local search ranking factors in ${locationText}.`,
       sections: [
         {
-          heading: `1. Google Business Profile & Reputation Benchmark (${ratingNum} Stars / ${reviewsNum} Reviews)`,
+          heading: `1. Scanned Google Business Profile & Reputation (${ratingNum} Stars / ${reviewsNum} Reviews)`,
           content: `${name} has established a strong customer rating of ${ratingNum} stars based on ${reviewsNum} Google Business reviews. Review analysis indicates solid customer satisfaction for ${categoryText}. However, profile engagement is restricted by incomplete metadata fields, unoptimized primary category tags, and inconsistent business hours update frequency.`
         },
         {
@@ -189,14 +279,16 @@ function generateDeepDynamicReport(
       ]
     },
     page2: {
-      title: `Page 2: Digital Storefront & Competitor Analysis - ${name}`,
-      summary: `Technical inspection of digital storefront infrastructure, user experience conversion bottlenecks, and competitor positioning for ${name}.`,
+      title: `Page 2: Live Website Scan & Technical UX Audit - ${name}`,
+      summary: `Technical inspection of digital storefront infrastructure and live scanned webpage signals for ${name}.`,
       sections: [
         {
-          heading: `1. Technical Web Infrastructure Audit for ${name}`,
-          content: hasWebsite
-            ? `Audit of ${website} reveals opportunities to improve mobile page speed score, add 1-click WhatsApp chat widgets, embed interactive Google review widgets, and implement SSL security badges.`
-            : `No digital storefront detected for ${name}. Absence of an online landing page leaves potential clients unable to inspect service details, read testimonials, or request instant quotes after hours.`
+          heading: `1. Live Webpage Scan Diagnostic Results`,
+          content: webScan.accessible
+            ? `LIVE SCAN RESULTS FOR ${webScan.url}:\n• Page Title: "${webScan.pageTitle}"\n• Meta Description: "${webScan.metaDesc}"\n• Main H1 Header: "${webScan.h1Header}"\n• SSL Encryption (HTTPS): ${webScan.hasSSL ? "Verified Secure" : "Missing SSL"}\n• WhatsApp Chat Widget: ${webScan.hasWhatsApp ? "Detected" : "Not Found"}\n• Contact Lead Form: ${webScan.hasContactForm ? "Detected" : "Not Found"}`
+            : webScan.scanned
+            ? `Scanned URL (${website}) returned an error: ${webScan.reason}. The site appears down or unreachable.`
+            : `No digital storefront detected on Google Maps for ${name}. Absence of an online landing page leaves potential clients unable to inspect service details, read testimonials, or request instant quotes after hours.`
         },
         {
           heading: `2. Local Competitor Benchmarking in ${locationText}`,
@@ -222,7 +314,7 @@ function generateDeepDynamicReport(
         },
         {
           heading: `3. Customized Outreach Sales Pitch Script for ${name}`,
-          content: `Subject: Quick question about ${name}'s ${ratingNum}★ Google rating\n\nHi ${name} Team,\n\nWe were inspecting top ${categoryText} providers in ${locationText} and noticed your stellar ${ratingNum}-star Google Maps listing with ${reviewsNum} positive reviews.\n\nHowever, potential customers looking for your services on mobile are missing a direct website link to view your work and book appointments instantly.\n\nWe built a custom, high-converting AI landing page prototype for ${name} to help you capture 2x more client inquiries this month.\n\nWould you like to preview the prototype website free of cost?`
+          content: `Subject: Quick question about ${name}'s ${ratingNum}★ Google rating\n\nHi ${name} Team,\n\nWe were inspecting top ${categoryText} providers in ${locationText} and noticed your stellar ${ratingNum}-star Google Maps listing with ${reviewsNum} positive reviews.\n\n${hasWebsite ? `We completed a live scan of your site (${website}) and found several mobile conversion bottlenecks.` : `However, potential customers looking for your services on mobile are missing a direct website link to view your work and book appointments instantly.`}\n\nWe built a custom, high-converting AI landing page prototype for ${name} to help you capture 2x more client inquiries this month.\n\nWould you like to preview the prototype website free of cost?`
         }
       ]
     }

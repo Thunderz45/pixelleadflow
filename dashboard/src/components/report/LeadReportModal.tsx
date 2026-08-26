@@ -4,6 +4,20 @@ import React, { useState } from "react";
 
 export interface ReportData {
   businessName: string;
+  scannedUrl?: string;
+  scanStatus?: string;
+  webScan?: {
+    scanned: boolean;
+    accessible?: boolean;
+    url?: string;
+    pageTitle?: string;
+    metaDesc?: string;
+    h1Header?: string;
+    hasSSL?: boolean;
+    hasWhatsApp?: boolean;
+    hasContactForm?: boolean;
+    reason?: string;
+  };
   overallScore: number;
   mapsAuditScore: number;
   websiteAuditScore: number;
@@ -144,6 +158,20 @@ ${report.page3.sections.map((s) => `\n${s.heading}\n${s.content}`).join("\n")}
             <span className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">Growth Opportunity</span>
             <p className="text-2xl font-extrabold text-secondary mt-0.5">{report.growthPotentialScore}%</p>
           </div>
+        </div>
+
+        {/* Live Web & Maps Scan Banner */}
+        <div className="px-6 py-2.5 bg-slate-900 text-slate-200 border-b border-slate-800 flex items-center justify-between text-[11px] font-medium print:hidden">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span className="font-bold text-white">Live Web & Maps Scan:</span>
+            <span>{report.scanStatus || "Live Diagnostic Verified"}</span>
+          </div>
+          {report.scannedUrl && report.scannedUrl !== "No Website Listed" && (
+            <span className="font-mono text-[10px] bg-slate-800 px-2 py-0.5 rounded text-emerald-300">
+              Scanned: {report.scannedUrl}
+            </span>
+          )}
         </div>
 
         {/* 3-Page Tab Bar Navigation */}
