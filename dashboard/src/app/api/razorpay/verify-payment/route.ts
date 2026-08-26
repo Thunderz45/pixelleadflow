@@ -23,12 +23,19 @@ export async function POST(req: Request) {
       isVerified = generatedSignature === razorpay_signature;
     }
 
+    // Calculate 1 month subscription expiry
+    const now = new Date();
+    const expiry = new Date(now.setMonth(now.getMonth() + 1));
+
     return NextResponse.json({
       success: true,
       verified: isVerified,
       tier: "pro",
+      leadsQuota: 100,
       websiteQuota: 5,
-      message: "Subscription payment verified. Pro Tier unlocked with 5 AI Website Prototype Generations!",
+      subscriptionDuration: "1 Month",
+      expiresAt: expiry.toISOString(),
+      message: "Pro 1 Month Subscription unlocked! 100 Leads Scraping & 5 AI Website Generations active.",
     });
   } catch (error: any) {
     console.error("Error verifying Razorpay payment:", error);

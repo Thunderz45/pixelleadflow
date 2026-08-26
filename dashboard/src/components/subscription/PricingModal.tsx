@@ -7,7 +7,7 @@ interface PricingModalProps {
   onClose: () => void;
   userId?: string;
   userEmail?: string;
-  onSuccess: (newQuota: number) => void;
+  onSuccess: (newWebsiteQuota: number, newLeadsQuota: number) => void;
 }
 
 declare global {
@@ -109,14 +109,14 @@ export default function PricingModal({
 
       const data = await res.json();
       if (data.success || data.verified) {
-        onSuccess(5);
+        onSuccess(5, 100);
         setShowTestCheckout(false);
         onClose();
       } else {
         setErrorMsg("Payment verification failed.");
       }
     } catch (err) {
-      onSuccess(5);
+      onSuccess(5, 100);
       setShowTestCheckout(false);
       onClose();
     } finally {
@@ -139,12 +139,12 @@ export default function PricingModal({
 
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-[11px] font-extrabold uppercase tracking-wider mb-2">
             <span className="material-symbols-outlined text-xs">auto_awesome</span>
-            Pro Monthly Subscription
+            Pro 1 Month Subscription
           </div>
 
           <h3 className="text-2xl font-extrabold">Upgrade to LeadFlow Pro</h3>
           <p className="text-xs text-blue-100 mt-1 leading-relaxed">
-            Unlock 5 AI Website Prototype Generations per month & premium B2B lead generation tools.
+            1 Month Unlimited Access: 100 Leads Scraping & 5 AI Website Prototype Generations.
           </p>
         </div>
 
@@ -156,7 +156,7 @@ export default function PricingModal({
             <span className="text-4xl font-extrabold text-on-surface">₹999</span>
             <span className="text-xs font-bold text-on-surface-variant">/ month</span>
             <span className="ml-auto px-2.5 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-full">
-              Cancel Anytime
+              1 Month Plan
             </span>
           </div>
 
@@ -237,7 +237,7 @@ export default function PricingModal({
                 {selectedMethod === "netbanking" && (
                   <p>Bank: <span className="text-emerald-400 font-bold">HDFC / SBI Test Bank</span></p>
                 )}
-                <p className="text-[10px] text-slate-400">Total: ₹999.00 (Test Transaction)</p>
+                <p className="text-[10px] text-slate-400">Total: ₹999.00 (1 Month Subscription)</p>
               </div>
 
               <button
@@ -246,24 +246,24 @@ export default function PricingModal({
                 className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs rounded-xl shadow-lg transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 <span className="material-symbols-outlined text-base">check_circle</span>
-                {loading ? "Processing Payment..." : "Complete Test Payment (₹999)"}
+                {loading ? "Processing Payment..." : "Complete Test Payment (100 Leads & 5 Websites)"}
               </button>
             </div>
           ) : (
             <>
               {/* Feature Included Checklist */}
               <div className="space-y-3">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Included in Pro Plan:</h4>
+                <h4 className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Included in 1 Month Pro Plan:</h4>
                 
                 <div className="space-y-2.5 text-xs text-on-surface">
                   <div className="flex items-center gap-2.5 font-bold text-primary bg-primary/5 p-2.5 rounded-xl border border-primary/20">
-                    <span className="material-symbols-outlined text-lg text-primary">auto_awesome</span>
-                    <span>5 AI Website Prototype Generations / month</span>
+                    <span className="material-symbols-outlined text-lg text-primary">cloud_download</span>
+                    <span>100 Leads Scraping / Month (Google Maps & LinkedIn)</span>
                   </div>
 
-                  <div className="flex items-center gap-2.5">
-                    <span className="material-symbols-outlined text-emerald-600 text-base">check_circle</span>
-                    <span>Unlimited Google Maps Business Leads Scraping</span>
+                  <div className="flex items-center gap-2.5 font-bold text-secondary bg-secondary/5 p-2.5 rounded-xl border border-secondary/20">
+                    <span className="material-symbols-outlined text-lg text-secondary">auto_awesome</span>
+                    <span>5 AI Website Prototype Generations / Month</span>
                   </div>
 
                   <div className="flex items-center gap-2.5">

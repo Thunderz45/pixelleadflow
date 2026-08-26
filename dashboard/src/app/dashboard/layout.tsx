@@ -140,14 +140,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="flex items-center justify-between">
           <span className="text-[10px] font-extrabold uppercase text-primary tracking-wider flex items-center gap-1">
             <span className="material-symbols-outlined text-xs">auto_awesome</span>
-            Pro Monthly
+            Pro 1 Month
           </span>
           <span className="text-[9px] font-bold bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded">
             ₹999/mo
           </span>
         </div>
         <p className="text-[11px] text-on-surface-variant font-medium leading-tight">
-          Unlock 5 AI Website Prototype Generations per month.
+          100 Leads Scraping & 5 AI Website Prototype Generations / month.
         </p>
         <button
           onClick={() => setIsPricingModalOpen(true)}

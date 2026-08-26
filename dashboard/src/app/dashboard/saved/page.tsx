@@ -53,6 +53,7 @@ export default function SavedBusinessesPage() {
   // Subscription & Quota state
   const [userTier, setUserTier] = useState<string>("free");
   const [websiteQuota, setWebsiteQuota] = useState<number>(0);
+  const [leadsQuota, setLeadsQuota] = useState<number>(10);
   const [isPricingModalOpen, setIsPricingModalOpen] = useState(false);
 
   // AI Website Generator state
@@ -112,15 +113,18 @@ export default function SavedBusinessesPage() {
     }
   };
 
-  const handleSubscriptionSuccess = async (newQuota: number) => {
+  const handleSubscriptionSuccess = async (newWebQuota: number = 5, newLeadsQuota: number = 100) => {
     setUserTier("pro");
-    setWebsiteQuota(newQuota);
+    setWebsiteQuota(newWebQuota);
+    setLeadsQuota(newLeadsQuota);
     if (user) {
       const userRef = doc(db, "users", user.uid);
       await setDoc(userRef, {
         tier: "pro",
-        websiteQuota: newQuota,
+        websiteQuota: newWebQuota,
+        leadsQuota: newLeadsQuota,
         subscriptionStatus: "active",
+        subscriptionPlan: "pro_monthly_100_leads_5_websites",
         updatedAt: new Date(),
       }, { merge: true }).catch(() => {});
     }
