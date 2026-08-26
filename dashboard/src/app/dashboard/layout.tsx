@@ -6,6 +6,7 @@ import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { Menu, X } from "lucide-react"; // Fallbacks for mobile toggles
 import PixelChat from "@/components/chat/PixelChat";
+import OneChat from "@/components/chat/OneChat";
 import PricingModal from "@/components/subscription/PricingModal";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, orderBy, limit, doc, updateDoc, serverTimestamp } from "firebase/firestore";
@@ -28,6 +29,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isPricingModalOpen, setIsPricingModalOpen] = useState(false);
+  const [isOneChatOpen, setIsOneChatOpen] = useState(false);
 
   // Notifications State
   const [notifOpen, setNotifOpen] = useState(false);
@@ -238,6 +240,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </Link>
           );
         })}
+
+        {/* OneChat AI Small Business Advisor Button */}
+        <div className="mx-2 mt-3 mb-2">
+          <button
+            onClick={() => {
+              setIsOneChatOpen(true);
+              setMobileMenuOpen(false);
+            }}
+            className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-primary text-white shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer group"
+          >
+            <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-white/20 text-white font-bold text-sm">
+              🚀
+            </span>
+            <div className="flex-1 text-left min-w-0">
+              <p className="text-xs font-extrabold text-white leading-tight truncate">OneChat AI</p>
+              <p className="text-[10px] text-emerald-100 font-medium leading-tight truncate">Small Business Advisor</p>
+            </div>
+            <span className="material-symbols-outlined text-[16px] text-white">chevron_right</span>
+          </button>
+        </div>
       </nav>
 
       {/* Pro Subscription Sidebar Card */}
@@ -478,6 +500,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         userId={user.uid}
         userEmail={user.email || ""}
         onSuccess={() => setIsPricingModalOpen(false)}
+      />
+
+      {/* OneChat AI Small Business Advisor Drawer */}
+      <OneChat
+        isOpen={isOneChatOpen}
+        onClose={() => setIsOneChatOpen(false)}
       />
 
     </div>
