@@ -17,6 +17,7 @@ import {
 } from "firebase/firestore";
 import WebsitePrototypeModal from "@/components/website/WebsitePrototypeModal";
 import PricingModal from "@/components/subscription/PricingModal";
+import LeadReportModal, { ReportData } from "@/components/report/LeadReportModal";
 
 interface Lead {
   id: string;
@@ -64,6 +65,48 @@ export default function SavedBusinessesPage() {
     businessName: string;
     leadId: string;
   } | null>(null);
+
+  // AI Audit Report state
+  const [generatingReportId, setGeneratingReportId] = useState<string | null>(null);
+  const [activeReportModal, setActiveReportModal] = useState<{
+    isOpen: boolean;
+    report: ReportData | null;
+    businessName: string;
+  } | null>(null);
+
+  const handleGenerateReport = async (lead: Lead) => {
+    setGeneratingReportId(lead.id);
+    try {
+      const res = await fetch("/api/report/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: lead.name,
+          category: lead.projectName || "Local Business",
+          address: lead.address,
+          phone: lead.phone,
+          rating: lead.rating,
+          reviewsCount: lead.reviewsCount,
+          website: lead.website,
+        }),
+      });
+
+      const data = await res.json();
+      if (data && data.page1) {
+        setActiveReportModal({
+          isOpen: true,
+          report: data,
+          businessName: lead.name,
+        });
+      } else {
+        alert(data.error || "Failed to generate AI Audit Report.");
+      }
+    } catch (err) {
+      console.error("Error generating report:", err);
+    } finally {
+      setGeneratingReportId(null);
+    }
+  };
 
   const handleGenerateWebsite = async (lead: Lead) => {
     // Check if user has quota
@@ -489,13 +532,27 @@ export default function SavedBusinessesPage() {
 
                     {/* Actions */}
                     <td className="p-4 text-center">
-                      <button
-                        onClick={() => handleDeleteLead(lead.id)}
-                        className="p-1 hover:bg-surface-container-high rounded text-error cursor-pointer"
-                        title="Delete Lead"
-                      >
-                        <span className="material-symbols-outlined text-[18px]">delete</span>
-                      </button>
+                      <div className="flex items-center justify-center gap-1.5">
+                        <button
+                          onClick={() => handleGenerateReport(lead)}
+                          disabled={generatingReportId === lead.id}
+                          className="px-2 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-[10px] font-bold shadow-xs transition-all flex items-center gap-1 cursor-pointer disabled:opacity-50 whitespace-nowrap"
+                          title="Generate 3-Page AI Business Audit & Growth Report"
+                        >
+                          <span className="material-symbols-outlined text-[12px]">
+                            {generatingReportId === lead.id ? "sync" : "analytics"}
+                          </span>
+                          {generatingReportId === lead.id ? "Analyzing..." : "Create Report"}
+                        </button>
+
+                        <button
+                          onClick={() => handleDeleteLead(lead.id)}
+                          className="p-1 hover:bg-surface-container-high rounded text-error cursor-pointer"
+                          title="Delete Lead"
+                        >
+                          <span className="material-symbols-outlined text-[18px]">delete</span>
+                        </button>
+                      </div>
                     </td>
 
                   </tr>
@@ -544,6 +601,16 @@ export default function SavedBusinessesPage() {
         userEmail={user?.email || ""}
         onSuccess={handleSubscriptionSuccess}
       />
+
+      {/* AI 3-Page Audit & Growth Report Modal */}
+      {activeReportModal && (
+        <LeadReportModal
+          isOpen={activeReportModal.isOpen}
+          onClose={() => setActiveReportModal(null)}
+          report={activeReportModal.report}
+          businessName={activeReportModal.businessName}
+        />
+      )}
 
     </div>
   );
