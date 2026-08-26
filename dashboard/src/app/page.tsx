@@ -392,12 +392,12 @@ export default function HomePage() {
             </div>
 
             <div className="bg-white p-6 rounded-2xl border border-outline-variant shadow-xs space-y-3">
-              <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center">
-                <span className="material-symbols-outlined text-xl">auto_awesome</span>
+              <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                <span className="material-symbols-outlined text-xl">forum</span>
               </div>
-              <h3 className="font-bold text-base text-on-surface">PixelChat AI Assistant</h3>
+              <h3 className="font-bold text-base text-on-surface">OneChat AI Assistant</h3>
               <p className="text-xs text-on-surface-variant leading-relaxed">
-                Built-in AI chat helper powered by Groq Llama 3.3 to assist you in real-time with search strategies and exports.
+                Built-in AI chat helper powered by Groq Llama 3.3 to assist you in real-time with greetings, growth strategies, and search advice.
               </p>
             </div>
 

@@ -16,7 +16,7 @@ export default function OneChat({ isOpen, onClose }: OneChatProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
-      content: "👋 Welcome to **OneChat AI**! I am your Small Business Growth Expert.\n\nAsk me anything about **how to grow a small business from scratch**, acquiring your first 10 clients, cold outreach scripts, local SEO, or scaling monthly revenue!",
+      content: "👋 Hello! I am **OneChat AI**, your personal assistant.\n\nHow can I help you today? Ask me anything—whether it's greetings, general questions, business advice, or lead generation tips!",
     },
   ]);
   const [input, setInput] = useState("");
@@ -37,10 +37,10 @@ export default function OneChat({ isOpen, onClose }: OneChatProps) {
   if (!isOpen) return null;
 
   const quickPrompts = [
-    "💡 How to get first 10 clients from scratch?",
-    "📈 Best zero-budget local marketing strategies?",
-    "🚀 How to convert Google Maps leads into $500/mo retainers?",
-    "📲 Cold WhatsApp script for local business outreach",
+    "👋 Hello! What can you help me with?",
+    "🚀 How to get first 10 clients from scratch?",
+    "📈 Best local marketing strategies?",
+    "📲 Cold outreach script for local business leads",
   ];
 
   const handleSendMessage = async (textToSend?: string) => {
@@ -74,7 +74,7 @@ export default function OneChat({ isOpen, onClose }: OneChatProps) {
       console.error("OneChat error:", err);
       setMessages([
         ...newMessages,
-        { role: "assistant", content: "Error connecting to OneChat AI. Please check your internet connection." },
+        { role: "assistant", content: "Error connecting to OneChat AI. Please check your network connection." },
       ]);
     } finally {
       setLoading(false);
@@ -89,17 +89,17 @@ export default function OneChat({ isOpen, onClose }: OneChatProps) {
         <div className="p-4 bg-gradient-to-r from-emerald-600 via-teal-600 to-primary text-white flex items-center justify-between border-b border-emerald-500">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center font-bold text-xl shadow-xs">
-              🚀
+              🤖
             </div>
             <div>
               <div className="flex items-center gap-1.5">
                 <h3 className="font-extrabold text-base text-white">OneChat AI</h3>
                 <span className="px-2 py-0.2 rounded-full bg-white/20 text-[9px] font-bold uppercase tracking-wider">
-                  Growth Expert
+                  Groq Powered
                 </span>
               </div>
               <p className="text-[11px] text-emerald-100 font-medium">
-                How to grow small businesses from scratch
+                Your Personal AI Assistant
               </p>
             </div>
           </div>
@@ -142,7 +142,7 @@ export default function OneChat({ isOpen, onClose }: OneChatProps) {
               >
                 <div className="flex items-center gap-1.5 mb-1 font-bold text-[10px] uppercase opacity-75">
                   <span className="material-symbols-outlined text-xs">
-                    {m.role === "user" ? "person" : "forum"}
+                    {m.role === "user" ? "person" : "robot"}
                   </span>
                   <span>{m.role === "user" ? "You" : "OneChat AI"}</span>
                 </div>
@@ -155,7 +155,7 @@ export default function OneChat({ isOpen, onClose }: OneChatProps) {
             <div className="flex items-start">
               <div className="p-3 bg-white border border-outline-variant rounded-2xl rounded-bl-none text-xs font-bold text-emerald-700 flex items-center gap-2 animate-pulse">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
-                OneChat is thinking growth strategies...
+                OneChat is typing...
               </div>
             </div>
           )}
@@ -175,7 +175,7 @@ export default function OneChat({ isOpen, onClose }: OneChatProps) {
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask OneChat how to grow your small business..."
+            placeholder="Type 'hi', 'hello', or ask OneChat anything..."
             disabled={loading}
             className="flex-1 bg-surface-container-low border border-outline-variant rounded-xl px-4 py-2.5 text-xs outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
           />
