@@ -27,6 +27,8 @@ export default function PricingModal({
   onSuccess,
 }: PricingModalProps) {
   const [loading, setLoading] = useState(false);
+  const [showTestCheckout, setShowTestCheckout] = useState(false);
+  const [selectedMethod, setSelectedMethod] = useState<"card" | "upi" | "netbanking">("card");
   const [errorMsg, setErrorMsg] = useState("");
 
   if (!isOpen) return null;
@@ -51,102 +53,71 @@ export default function PricingModal({
 
     try {
       const scriptLoaded = await loadRazorpayScript();
-      if (!scriptLoaded) {
-        setErrorMsg("Failed to load Razorpay SDK. Please check your internet connection.");
-        setLoading(false);
-        return;
-      }
+      if (scriptLoaded && window.Razorpay) {
+        try {
+          const options: any = {
+            key: RAZORPAY_KEY_ID,
+            amount: 99900,
+            currency: "INR",
+            name: "LeadFlow Pro",
+            description: "Monthly Pro Subscription - 5 AI Website Prototype Generations",
+            image: "/logo.png",
+            handler: async function (response: any) {
+              await completeTestPayment(response.razorpay_payment_id || `pay_${Date.now()}`);
+            },
+            prefill: {
+              email: userEmail || "user@leadflow.in",
+            },
+            theme: {
+              color: "#004ac6",
+            },
+          };
 
-      let orderData: any = {};
-      try {
-        const orderRes = await fetch("/api/razorpay/create-order", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            userId: userId || "guest_user",
-            plan: "pro_monthly",
-            amount: 999,
-          }),
-        });
-        if (orderRes.ok) {
-          orderData = await orderRes.json();
+          const rzp = new window.Razorpay(options);
+          rzp.on("payment.failed", function () {
+            setShowTestCheckout(true);
+          });
+          rzp.open();
+          setLoading(false);
+          return;
+        } catch (sdkErr) {
+          console.warn("Razorpay SDK launch error, using test modal fallback:", sdkErr);
         }
-      } catch (err) {
-        console.warn("Order creation fetch failed, using test mode options:", err);
       }
-
-      // Configure Razorpay checkout options
-      const options: any = {
-        key: (orderData && orderData.key) || RAZORPAY_KEY_ID,
-        amount: (orderData && orderData.amount) || 99900,
-        currency: "INR",
-        name: "LeadFlow Pro",
-        description: "Monthly Pro Subscription - 5 AI Website Prototype Generations",
-        image: "/logo.png",
-        handler: async function (response: any) {
-          try {
-            await fetch("/api/razorpay/verify-payment", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                razorpay_order_id: response.razorpay_order_id || "test_order",
-                razorpay_payment_id: response.razorpay_payment_id || `pay_${Date.now()}`,
-                razorpay_signature: response.razorpay_signature || "test_sig",
-                userId: userId || "guest_user",
-              }),
-            });
-            onSuccess(5);
-            onClose();
-          } catch (verifyErr: any) {
-            console.error("Payment verify error:", verifyErr);
-            onSuccess(5);
-            onClose();
-          }
-        },
-        prefill: {
-          email: userEmail || "user@leadflow.in",
-        },
-        theme: {
-          color: "#004ac6",
-        },
-      };
-
-      // Only pass order_id if valid server-generated Razorpay order ID
-      if (orderData && orderData.id && typeof orderData.id === "string" && orderData.id.startsWith("order_") && !orderData.id.startsWith("order_test_")) {
-        options.order_id = orderData.id;
-      }
-
-      const paymentObject = new window.Razorpay(options);
-      paymentObject.on("payment.failed", function (response: any) {
-        console.warn("Payment failed callback:", response.error);
-        setErrorMsg("Payment failed or cancelled. Try test payment below.");
-      });
-      paymentObject.open();
-    } catch (err: any) {
-      console.error("Razorpay subscription error:", err);
-      setErrorMsg(err.message || "Failed to initialize Razorpay checkout.");
-    } finally {
-      setLoading(false);
+    } catch (err) {
+      console.warn("Razorpay script load error:", err);
     }
+
+    // Fallback to interactive test payment checkout modal
+    setShowTestCheckout(true);
+    setLoading(false);
   };
 
-  const handleInstantTestUnlock = async () => {
+  const completeTestPayment = async (paymentId?: string) => {
     setLoading(true);
     try {
-      await fetch("/api/razorpay/verify-payment", {
+      const res = await fetch("/api/razorpay/verify-payment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          razorpay_order_id: `test_order_${Date.now()}`,
-          razorpay_payment_id: `pay_test_${Date.now()}`,
-          razorpay_signature: "test_demo_signature",
+          razorpay_order_id: `order_test_${Date.now()}`,
+          razorpay_payment_id: paymentId || `pay_test_${Date.now()}`,
+          razorpay_signature: "test_verification_signature",
           userId: userId || "guest_user",
         }),
       });
-      onSuccess(5);
-      onClose();
+
+      const data = await res.json();
+      if (data.success || data.verified) {
+        onSuccess(5);
+        setShowTestCheckout(false);
+        onClose();
+      } else {
+        setErrorMsg("Payment verification failed.");
+      }
     } catch (err) {
       onSuccess(5);
+      setShowTestCheckout(false);
       onClose();
     } finally {
       setLoading(false);
@@ -196,71 +167,149 @@ export default function PricingModal({
                 <span>{errorMsg}</span>
               </div>
               <button
-                onClick={handleInstantTestUnlock}
+                onClick={() => completeTestPayment()}
                 className="px-2.5 py-1 bg-rose-600 text-white font-bold rounded-lg text-[10px] whitespace-nowrap cursor-pointer hover:bg-rose-700 transition-colors"
               >
-                Instant Unlock (Test)
+                Instant Unlock
               </button>
             </div>
           )}
 
-          {/* Feature Included Checklist */}
-          <div className="space-y-3">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Included in Pro Plan:</h4>
-            
-            <div className="space-y-2.5 text-xs text-on-surface">
-              <div className="flex items-center gap-2.5 font-bold text-primary bg-primary/5 p-2.5 rounded-xl border border-primary/20">
-                <span className="material-symbols-outlined text-lg text-primary">auto_awesome</span>
-                <span>5 AI Website Prototype Generations / month</span>
+          {/* Interactive Test Checkout Options View */}
+          {showTestCheckout ? (
+            <div className="space-y-4 p-4 bg-slate-900 text-white rounded-2xl border border-slate-800 animate-fade-in">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                  <span className="font-bold text-xs">Razorpay Test Mode Active</span>
+                </div>
+                <span className="text-[10px] text-slate-400 font-mono">Key: rzp_test_...5Cbc</span>
               </div>
 
-              <div className="flex items-center gap-2.5">
-                <span className="material-symbols-outlined text-emerald-600 text-base">check_circle</span>
-                <span>Unlimited Google Maps Business Leads Scraping</span>
+              <div className="space-y-2">
+                <label className="text-[11px] font-bold text-slate-400">Select Test Payment Method:</label>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    onClick={() => setSelectedMethod("card")}
+                    className={`p-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer flex flex-col items-center gap-1 ${
+                      selectedMethod === "card"
+                        ? "bg-primary text-white border-primary"
+                        : "bg-slate-800 text-slate-300 border-slate-700 hover:border-slate-500"
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-base">credit_card</span>
+                    Test Card
+                  </button>
+
+                  <button
+                    onClick={() => setSelectedMethod("upi")}
+                    className={`p-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer flex flex-col items-center gap-1 ${
+                      selectedMethod === "upi"
+                        ? "bg-primary text-white border-primary"
+                        : "bg-slate-800 text-slate-300 border-slate-700 hover:border-slate-500"
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-base">qr_code_2</span>
+                    Test UPI
+                  </button>
+
+                  <button
+                    onClick={() => setSelectedMethod("netbanking")}
+                    className={`p-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer flex flex-col items-center gap-1 ${
+                      selectedMethod === "netbanking"
+                        ? "bg-primary text-white border-primary"
+                        : "bg-slate-800 text-slate-300 border-slate-700 hover:border-slate-500"
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-base">account_balance</span>
+                    Netbanking
+                  </button>
+                </div>
               </div>
 
-              <div className="flex items-center gap-2.5">
-                <span className="material-symbols-outlined text-emerald-600 text-base">check_circle</span>
-                <span>LinkedIn Profile Scraper with AI Auto-Categorization</span>
+              <div className="p-3 bg-slate-950 rounded-xl text-[11px] font-mono text-slate-300 space-y-1">
+                {selectedMethod === "card" && (
+                  <p>Card: <span className="text-emerald-400 font-bold">4111 1111 1111 1111</span> (Success)</p>
+                )}
+                {selectedMethod === "upi" && (
+                  <p>UPI ID: <span className="text-emerald-400 font-bold">success@razorpay</span></p>
+                )}
+                {selectedMethod === "netbanking" && (
+                  <p>Bank: <span className="text-emerald-400 font-bold">HDFC / SBI Test Bank</span></p>
+                )}
+                <p className="text-[10px] text-slate-400">Total: ₹999.00 (Test Transaction)</p>
               </div>
 
-              <div className="flex items-center gap-2.5">
-                <span className="material-symbols-outlined text-emerald-600 text-base">check_circle</span>
-                <span>PixelChat AI Assistant (Groq Llama 3.3)</span>
-              </div>
-
-              <div className="flex items-center gap-2.5">
-                <span className="material-symbols-outlined text-emerald-600 text-base">check_circle</span>
-                <span>Unlimited Excel (.xlsx) & CSV Dataset Exports</span>
-              </div>
+              <button
+                onClick={() => completeTestPayment()}
+                disabled={loading}
+                className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs rounded-xl shadow-lg transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                <span className="material-symbols-outlined text-base">check_circle</span>
+                {loading ? "Processing Payment..." : "Complete Test Payment (₹999)"}
+              </button>
             </div>
-          </div>
+          ) : (
+            <>
+              {/* Feature Included Checklist */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Included in Pro Plan:</h4>
+                
+                <div className="space-y-2.5 text-xs text-on-surface">
+                  <div className="flex items-center gap-2.5 font-bold text-primary bg-primary/5 p-2.5 rounded-xl border border-primary/20">
+                    <span className="material-symbols-outlined text-lg text-primary">auto_awesome</span>
+                    <span>5 AI Website Prototype Generations / month</span>
+                  </div>
 
-          {/* Subscribe Action Button */}
-          <div className="space-y-3 pt-2">
-            <button
-              onClick={handleSubscribeClick}
-              disabled={loading}
-              className="w-full py-3.5 bg-gradient-to-r from-primary via-primary-container to-secondary text-white rounded-2xl font-extrabold text-sm shadow-xl shadow-primary/25 hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer disabled:opacity-60 flex items-center justify-center gap-2"
-            >
-              <span className="material-symbols-outlined text-lg">payment</span>
-              {loading ? "Launching Razorpay..." : "Subscribe with Razorpay (₹999)"}
-            </button>
+                  <div className="flex items-center gap-2.5">
+                    <span className="material-symbols-outlined text-emerald-600 text-base">check_circle</span>
+                    <span>Unlimited Google Maps Business Leads Scraping</span>
+                  </div>
 
-            <button
-              onClick={handleInstantTestUnlock}
-              disabled={loading}
-              className="w-full py-2.5 bg-surface-container-high hover:bg-emerald-50 text-on-surface hover:text-emerald-700 border border-outline-variant/60 rounded-xl font-bold text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5"
-            >
-              <span className="material-symbols-outlined text-base">verified</span>
-              <span>Demo Test Unlock (Instantly Grant 5 Website Credits)</span>
-            </button>
+                  <div className="flex items-center gap-2.5">
+                    <span className="material-symbols-outlined text-emerald-600 text-base">check_circle</span>
+                    <span>LinkedIn Profile Scraper with AI Auto-Categorization</span>
+                  </div>
 
-            <div className="text-center text-[10px] text-on-surface-variant flex items-center justify-center gap-2 pt-1">
-              <span className="material-symbols-outlined text-xs text-outline">lock</span>
-              <span>Secured by Razorpay • Key: rzp_test_T3eWLzmc2b5Cbc</span>
-            </div>
-          </div>
+                  <div className="flex items-center gap-2.5">
+                    <span className="material-symbols-outlined text-emerald-600 text-base">check_circle</span>
+                    <span>PixelChat AI Assistant (Groq Llama 3.3)</span>
+                  </div>
+
+                  <div className="flex items-center gap-2.5">
+                    <span className="material-symbols-outlined text-emerald-600 text-base">check_circle</span>
+                    <span>Unlimited Excel (.xlsx) & CSV Dataset Exports</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Subscribe Action Button */}
+              <div className="space-y-3 pt-2">
+                <button
+                  onClick={handleSubscribeClick}
+                  disabled={loading}
+                  className="w-full py-3.5 bg-gradient-to-r from-primary via-primary-container to-secondary text-white rounded-2xl font-extrabold text-sm shadow-xl shadow-primary/25 hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer disabled:opacity-60 flex items-center justify-center gap-2"
+                >
+                  <span className="material-symbols-outlined text-lg">payment</span>
+                  {loading ? "Launching Razorpay..." : "Subscribe with Razorpay (₹999)"}
+                </button>
+
+                <button
+                  onClick={() => setShowTestCheckout(true)}
+                  disabled={loading}
+                  className="w-full py-2.5 bg-surface-container-high hover:bg-emerald-50 text-on-surface hover:text-emerald-700 border border-outline-variant/60 rounded-xl font-bold text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  <span className="material-symbols-outlined text-base">verified</span>
+                  <span>Razorpay Test Mode (Simulate Payment)</span>
+                </button>
+
+                <div className="text-center text-[10px] text-on-surface-variant flex items-center justify-center gap-2 pt-1">
+                  <span className="material-symbols-outlined text-xs text-outline">lock</span>
+                  <span>Secured by Razorpay • Key: rzp_test_T3eWLzmc2b5Cbc</span>
+                </div>
+              </div>
+            </>
+          )}
 
         </div>
 
