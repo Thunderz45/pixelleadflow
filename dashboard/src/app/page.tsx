@@ -81,127 +81,74 @@ export default function HomePage() {
         </div>
       </header>
 
-      {/* Hero Section with Left & Right Montage Videos */}
+      {/* Hero Section with Right-Side Horizontal Video */}
       <section className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-16">
         
-        {/* Desktop 3-Column Flanking Showcase */}
-        <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr_240px] gap-6 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
           
-          {/* Left Side Curved Montage Video */}
-          <div className="hidden lg:block relative rounded-3xl overflow-hidden border-2 border-primary/30 shadow-2xl shadow-primary/20 group hover:border-primary/60 transition-all duration-300 transform hover:-translate-y-1 bg-slate-950">
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent z-10 pointer-events-none"></div>
-            <video
-              src="/montage.mp4"
-              autoPlay
-              loop
-              muted
-              playsInline
-              className="w-full h-[460px] object-cover rounded-3xl"
-            ></video>
-            <div className="absolute bottom-4 left-4 z-20 text-left text-white space-y-1">
-              <span className="px-2.5 py-0.5 rounded-full bg-primary/80 text-white text-[10px] font-extrabold uppercase tracking-wider backdrop-blur-md border border-white/20">
-                Lead Engine
-              </span>
-              <p className="text-xs font-bold text-white drop-shadow-md">Google Maps & B2B Scraper</p>
-            </div>
-          </div>
-
-          {/* Center Column: Hero Content */}
-          <div className="text-center">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold mb-6 animate-fade-in">
+          {/* Left Column: Hero Content & CTAs (7 cols) */}
+          <div className="lg:col-span-7 text-left space-y-6">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold animate-fade-in">
               <span className="material-symbols-outlined text-base">auto_awesome</span>
               <span>B2B Lead Engine & AI Website Generator</span>
             </div>
 
-            <h1 className="text-3xl sm:text-5xl lg:text-5xl font-extrabold text-on-surface tracking-tight leading-[1.15] max-w-3xl mx-auto">
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-on-surface tracking-tight leading-[1.15]">
               Discover High-Intent Business Leads & <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-primary-container to-secondary">Auto-Generate Websites</span>
             </h1>
 
-            <p className="mt-5 text-sm sm:text-base text-on-surface-variant max-w-xl mx-auto leading-relaxed">
+            <p className="text-base sm:text-lg text-on-surface-variant max-w-2xl leading-relaxed">
               LeadFlow extracts B2B contact data from Google Maps & LinkedIn. For businesses missing a website, LeadFlow automatically generates custom, high-converting prototype landing pages in seconds.
             </p>
 
             {/* Action Buttons */}
-            <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
               <button
                 onClick={handleDashboardClick}
-                className="w-full sm:w-auto px-7 py-3.5 bg-gradient-to-r from-primary via-primary-container to-secondary text-white rounded-2xl font-extrabold text-xs shadow-xl shadow-primary/30 hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-2 group"
+                className="px-8 py-4 bg-gradient-to-r from-primary via-primary-container to-secondary text-white rounded-2xl font-extrabold text-sm shadow-xl shadow-primary/30 hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-2 group"
               >
-                <span className="material-symbols-outlined text-lg">rocket_launch</span>
+                <span className="material-symbols-outlined text-xl">rocket_launch</span>
                 <span>Try LeadFlow Now</span>
-                <span className="material-symbols-outlined text-base group-hover:translate-x-1 transition-transform">
+                <span className="material-symbols-outlined text-lg group-hover:translate-x-1 transition-transform">
                   arrow_forward
                 </span>
               </button>
 
               <button
                 onClick={scrollToHowItWorks}
-                className="w-full sm:w-auto px-7 py-3.5 bg-white hover:bg-surface-container-low text-on-surface border border-outline-variant rounded-2xl font-bold text-xs shadow-sm transition-all cursor-pointer flex items-center justify-center gap-2"
+                className="px-8 py-4 bg-white hover:bg-surface-container-low text-on-surface border border-outline-variant rounded-2xl font-bold text-sm shadow-sm transition-all cursor-pointer flex items-center justify-center gap-2"
               >
-                <span className="material-symbols-outlined text-lg text-primary">play_circle</span>
+                <span className="material-symbols-outlined text-xl text-primary">play_circle</span>
                 <span>How It Works</span>
               </button>
             </div>
           </div>
 
-          {/* Right Side Curved Montage Video */}
-          <div className="hidden lg:block relative rounded-3xl overflow-hidden border-2 border-secondary/30 shadow-2xl shadow-secondary/20 group hover:border-secondary/60 transition-all duration-300 transform hover:-translate-y-1 bg-slate-950">
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent z-10 pointer-events-none"></div>
-            <video
-              src="/montage.mp4"
-              autoPlay
-              loop
-              muted
-              playsInline
-              className="w-full h-[460px] object-cover rounded-3xl"
-            ></video>
-            <div className="absolute bottom-4 left-4 z-20 text-left text-white space-y-1">
-              <span className="px-2.5 py-0.5 rounded-full bg-secondary/80 text-white text-[10px] font-extrabold uppercase tracking-wider backdrop-blur-md border border-white/20">
-                AI Website Builder
-              </span>
-              <p className="text-xs font-bold text-white drop-shadow-md">Instant Prototype Generator</p>
+          {/* Right Column: Horizontal Video with Curved Corners (5 cols) */}
+          <div className="lg:col-span-5 w-full">
+            <div className="relative rounded-3xl overflow-hidden border-2 border-primary/30 shadow-2xl shadow-primary/20 group hover:border-primary/60 transition-all duration-300 transform hover:-translate-y-1 bg-slate-950 aspect-video">
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent z-10 pointer-events-none"></div>
+              <video
+                src="/montage.mp4"
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="w-full h-full object-cover rounded-3xl"
+              ></video>
+              <div className="absolute bottom-4 left-4 z-20 text-left text-white space-y-1">
+                <span className="px-2.5 py-0.5 rounded-full bg-primary/80 text-white text-[10px] font-extrabold uppercase tracking-wider backdrop-blur-md border border-white/20">
+                  Lead Engine & AI Website Showcase
+                </span>
+                <p className="text-xs font-bold text-white drop-shadow-md">Automated B2B Client Acquisition</p>
+              </div>
             </div>
           </div>
 
-        </div>
-
-        {/* Mobile & Tablet Dual Video Showcase (Curved Corners) */}
-        <div className="grid lg:hidden grid-cols-2 gap-4 mt-8">
-          <div className="relative rounded-2xl overflow-hidden border border-primary/30 shadow-lg bg-slate-950">
-            <video
-              src="/montage.mp4"
-              autoPlay
-              loop
-              muted
-              playsInline
-              className="w-full h-48 sm:h-64 object-cover rounded-2xl"
-            ></video>
-            <div className="absolute bottom-2 left-2 z-10">
-              <span className="px-2 py-0.5 rounded-full bg-primary/80 text-white text-[9px] font-extrabold">
-                Lead Engine
-              </span>
-            </div>
-          </div>
-
-          <div className="relative rounded-2xl overflow-hidden border border-secondary/30 shadow-lg bg-slate-950">
-            <video
-              src="/montage.mp4"
-              autoPlay
-              loop
-              muted
-              playsInline
-              className="w-full h-48 sm:h-64 object-cover rounded-2xl"
-            ></video>
-            <div className="absolute bottom-2 left-2 z-10">
-              <span className="px-2 py-0.5 rounded-full bg-secondary/80 text-white text-[9px] font-extrabold">
-                AI Prototype
-              </span>
-            </div>
-          </div>
         </div>
 
         {/* Live Stats Bar */}
-        <div className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
+        <div className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
           <div className="bg-white/80 backdrop-blur-md p-4 rounded-2xl border border-outline-variant/60 shadow-xs text-center">
             <h3 className="text-2xl font-extrabold text-primary">100%</h3>
             <p className="text-xs text-on-surface-variant mt-0.5">Automated Lead Extraction</p>
