@@ -9,6 +9,7 @@ export interface ReportData {
   webScan?: {
     scanned: boolean;
     accessible?: boolean;
+    engine?: string;
     url?: string;
     pageTitle?: string;
     metaDesc?: string;
