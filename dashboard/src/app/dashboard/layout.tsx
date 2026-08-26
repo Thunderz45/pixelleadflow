@@ -142,6 +142,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const navItems = [
     { name: "Home", href: "/dashboard", icon: "home" },
+    { name: "OneChat AI", href: "#", icon: "forum", isOneChatTrigger: true },
     { name: "LinkedIn Leads", href: "/dashboard/linkedin", icon: "badge" },
     { name: "Projects", href: "/dashboard/projects", icon: "folder_open" },
     { name: "Saved Businesses", href: "/dashboard/saved", icon: "business_center" },
@@ -173,6 +174,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       <nav className="flex-1 px-4 space-y-1 overflow-y-auto">
         {navItems.map((item) => {
+          if (item.isOneChatTrigger) {
+            return (
+              <button
+                key={item.name}
+                onClick={() => {
+                  setIsOneChatOpen(true);
+                  setMobileMenuOpen(false);
+                }}
+                className="w-full flex items-center justify-between px-4 py-2 rounded-lg text-emerald-700 bg-emerald-50/70 hover:bg-emerald-100/80 font-bold transition-all duration-200 cursor-pointer group my-0.5 border border-emerald-200/60"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="material-symbols-outlined text-emerald-600 text-lg">forum</span>
+                  <span className="font-body-md text-sm font-extrabold text-emerald-800">OneChat AI</span>
+                </div>
+                <span className="px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[9px] font-extrabold uppercase tracking-wider shadow-2xs">
+                  Advisor
+                </span>
+              </button>
+            );
+          }
           const isActive = pathname === item.href;
           return (
             <Link
