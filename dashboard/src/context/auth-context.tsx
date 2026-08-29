@@ -40,13 +40,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
 
       if (!userSnap.exists()) {
-        // New user creation
+        // New user creation (First-time login / registration)
         await setDoc(userRef, {
           ...userData,
           createdAt: serverTimestamp(),
           role: "user",
           tier: "free",
+          welcomeEmailSent: true,
         });
+
+        // Send Welcome & Exclusive Offer Email on first time login
+        if (firebaseUser.email) {
+          fetch("/api/welcome-email", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: firebaseUser.email,
+              name: nameOverride || firebaseUser.displayName || firebaseUser.email.split("@")[0] || "User",
+              isFirstTime: true,
+            }),
+          }).catch((e) => console.error("Welcome email error:", e));
+        }
       } else {
         // Existing user update
         await setDoc(userRef, userData, { merge: true });
