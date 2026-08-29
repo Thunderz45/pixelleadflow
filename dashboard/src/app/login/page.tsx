@@ -51,6 +51,17 @@ export default function LoginPage() {
       if (typeof window !== "undefined") {
         sessionStorage.setItem("welcome_offer_active", "true");
       }
+      // Send Welcome & Exclusive Offer Email to user
+      fetch("/api/welcome-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: email,
+          name: name || email.split("@")[0],
+          isFirstTime: true,
+        }),
+      }).catch((e) => console.error("Login welcome email trigger error:", e));
+
       setTimeout(() => {
         router.push("/dashboard");
       }, 500);
