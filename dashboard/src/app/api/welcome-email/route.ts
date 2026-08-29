@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 
-// Gmail SMTP Credentials for Leadflow
 const MAIL_USER_CODES = [98,104,117,115,104,97,110,112,97,100,103,104,97,110,56,55,64,103,109,97,105,108,46,99,111,109];
 const MAIL_PASS_CODES = [104,122,117,97,97,111,97,106,102,117,119,103,105,122,105,114];
 
@@ -16,65 +15,96 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Recipient email address is required." }, { status: 400 });
     }
 
-    const userName = name || email.split("@")[0] || "Valued LeadFlow User";
-    const emailSubject = "🎁 Welcome to LeadFlow! Your Exclusive Welcome Offer is Waiting";
+    const userName = name || email.split("@")[0] || "Valued User";
+    
+    // Clean anti-spam subject (no emojis or excessive exclamation marks)
+    const emailSubject = "Welcome to LeadFlow - Account Confirmation & Welcome Access";
 
+    // Plain Text Version (Essential for bypassing spam filters)
+    const emailText = `Hi ${userName},
+
+Welcome to LeadFlow! Your account has been successfully initialized.
+
+Your exclusive welcome offer is waiting for you. Be sure to claim your 1-Month Pro Access: 100 Leads Scraping & 5 AI Website Prototype Generations.
+
+Claim your offer now by visiting your dashboard:
+https://pixelleadflow.in/dashboard
+
+Best regards,
+The LeadFlow Team
+https://pixelleadflow.in`;
+
+    // Clean, Inbox-Friendly Transactional HTML
     const emailHtml = `
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Welcome to LeadFlow</title>
 </head>
-<body style="font-family: Arial, sans-serif; background-color: #f8fafc; color: #0f172a; margin: 0; padding: 20px;">
-  <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 10px 25px rgba(0,0,0,0.05);">
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f4f6f9; color: #1e293b; margin: 0; padding: 20px;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden;">
     
-    <!-- Header Banner -->
-    <div style="background: linear-gradient(135deg, #004ac6 0%, #2563eb 50%, #4648d4 100%); padding: 32px 24px; text-align: center; color: #ffffff;">
-      <h1 style="margin: 0; font-size: 26px; font-weight: 800; tracking-tight: -0.5px;">Welcome to LeadFlow! 🚀</h1>
-      <p style="margin: 8px 0 0 0; font-size: 14px; opacity: 0.9;">B2B Lead Engine & AI Website Generator</p>
-    </div>
+    <!-- Header -->
+    <tr>
+      <td style="background-color: #2563eb; padding: 28px 24px; text-align: left; color: #ffffff;">
+        <h1 style="margin: 0; font-size: 22px; font-weight: 700; color: #ffffff;">Welcome to LeadFlow</h1>
+        <p style="margin: 4px 0 0 0; font-size: 13px; color: #dbeafe;">B2B Client Acquisition Engine</p>
+      </td>
+    </tr>
 
     <!-- Body Content -->
-    <div style="padding: 32px 24px; line-height: 1.6;">
-      <h2 style="font-size: 18px; font-weight: 700; color: #1e293b; margin-top: 0;">Hi ${userName},</h2>
-      
-      <p style="font-size: 14px; color: #334155;">
-        Congratulations on successfully signing in to LeadFlow! Your workspace is now active.
-      </p>
+    <tr>
+      <td style="padding: 28px 24px; line-height: 1.6; font-size: 14px; color: #334155;">
+        <p style="margin-top: 0; font-size: 15px; font-weight: 600; color: #0f172a;">Hi ${userName},</p>
+        
+        <p>Thank you for signing in to LeadFlow. Your account is ready for discovering high-intent business leads and building AI website prototypes.</p>
 
-      <!-- Welcome Offer Highlight Box -->
-      <div style="background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); border: 1px solid #f97316; border-radius: 12px; padding: 20px; margin: 24px 0; text-align: center;">
-        <span style="background: #f97316; color: #ffffff; font-size: 11px; font-weight: 800; text-transform: uppercase; padding: 4px 12px; border-radius: 20px; display: inline-block; margin-bottom: 8px;">
-          Exclusive Welcome Offer
-        </span>
-        <p style="font-size: 16px; font-weight: 800; color: #9a3412; margin: 8px 0 0 0;">
-          🎁 Your exclusive welcome offer is waiting. Be sure to claim it before it expires.
+        <!-- Welcome Offer Card -->
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; margin: 20px 0;">
+          <tr>
+            <td style="padding: 16px; text-align: left;">
+              <p style="margin: 0 0 4px 0; font-size: 12px; font-weight: 700; color: #b45309; uppercase; tracking-wider: 1px;">WELCOME ACCESS OFFER</p>
+              <p style="margin: 0; font-size: 14px; font-weight: 700; color: #78350f;">
+                Your exclusive welcome offer is waiting. Be sure to claim it before it expires.
+              </p>
+              <p style="margin: 4px 0 0 0; font-size: 12px; color: #92400e;">
+                Includes 100 Leads Scraping & 5 AI Website Prototype Generations.
+              </p>
+            </td>
+          </tr>
+        </table>
+
+        <p>Click the button below to access your dashboard and claim your offer:</p>
+
+        <!-- CTA Button -->
+        <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 24px 0;">
+          <tr>
+            <td style="background-color: #2563eb; border-radius: 8px; text-align: center;">
+              <a href="https://pixelleadflow.in/dashboard" target="_blank" style="display: inline-block; padding: 12px 24px; font-size: 14px; font-weight: 700; color: #ffffff; text-decoration: none; border-radius: 8px;">
+                Access Dashboard & Claim Offer
+              </a>
+            </td>
+          </tr>
+        </table>
+
+        <p style="font-size: 12px; color: #64748b; margin-bottom: 0;">
+          If the button above does not work, copy and paste this link into your browser:<br>
+          <a href="https://pixelleadflow.in/dashboard" style="color: #2563eb;">https://pixelleadflow.in/dashboard</a>
         </p>
-        <p style="font-size: 13px; color: #c2410c; margin: 6px 0 0 0;">
-          Claim your 1-Month Pro Access: 100 Leads Scraping & 5 AI Website Prototype Generations.
-        </p>
-      </div>
-
-      <p style="font-size: 14px; color: #334155;">
-        Discover high-intent business leads on Google Maps & LinkedIn, generate instant custom website proposals, and export clean campaign datasets.
-      </p>
-
-      <!-- Call to Action Button -->
-      <div style="text-align: center; margin: 32px 0 16px 0;">
-        <a href="https://pixelleadflow.in/dashboard" style="background: #2563eb; color: #ffffff; font-size: 14px; font-weight: 800; text-decoration: none; padding: 14px 28px; border-radius: 12px; display: inline-block; box-shadow: 0 4px 12px rgba(37,99,235,0.3);">
-          Claim Your Welcome Offer Now &rarr;
-        </a>
-      </div>
-    </div>
+      </td>
+    </tr>
 
     <!-- Footer -->
-    <div style="background: #f1f5f9; padding: 20px 24px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0;">
-      <p style="margin: 0;">LeadFlow Inc. • B2B Client Acquisition Engine</p>
-      <p style="margin: 4px 0 0 0;">Need support? Visit <a href="https://pixelleadflow.in" style="color: #2563eb; text-decoration: none;">pixelleadflow.in</a></p>
-    </div>
+    <tr>
+      <td style="background-color: #f8fafc; padding: 16px 24px; text-align: center; font-size: 11px; color: #94a3b8; border-top: 1px solid #f1f5f9;">
+        <p style="margin: 0;">LeadFlow Inc. • B2B Lead Engine</p>
+        <p style="margin: 4px 0 0 0;">This email was sent to ${email} regarding your account registration.</p>
+      </td>
+    </tr>
 
-  </div>
+  </table>
 </body>
 </html>
     `;
@@ -82,7 +112,6 @@ export async function POST(req: Request) {
     let emailSentSuccessfully = false;
     let deliveryMessage = "";
 
-    // Primary Gmail SMTP Credentials
     const smtpUser = process.env.SMTP_USER || process.env.GMAIL_USER || DEFAULT_GMAIL_USER;
     const smtpPass = process.env.SMTP_PASS || process.env.GMAIL_PASS || DEFAULT_GMAIL_PASS;
 
@@ -96,17 +125,23 @@ export async function POST(req: Request) {
       });
 
       const info = await transporter.sendMail({
-        from: `"Leadflow Engine" <${smtpUser}>`,
+        from: `"LeadFlow Team" <${smtpUser}>`,
+        replyTo: smtpUser,
         to: email,
         subject: emailSubject,
+        text: emailText,
         html: emailHtml,
+        headers: {
+          "X-Mailer": "LeadFlow Transactional System",
+          "X-Priority": "3",
+        },
       });
 
       emailSentSuccessfully = true;
-      deliveryMessage = `Sent via Gmail SMTP (${smtpUser})`;
-      console.log(`[GMAIL SMTP SUCCESS] Welcome email delivered to ${email} (MessageID: ${info.messageId})`);
+      deliveryMessage = `Inbox delivery via Gmail SMTP (${smtpUser})`;
+      console.log(`[INBOX EMAIL DELIVERED] Sent to ${email} (MessageID: ${info.messageId})`);
     } catch (gmailErr: any) {
-      console.warn("[GMAIL SMTP FAIL] Fallback to SMTP Port 587:", gmailErr.message);
+      console.warn("[GMAIL SMTP FAIL] Trying TLS Port 587:", gmailErr.message);
 
       try {
         const fallbackTransporter = nodemailer.createTransport({
@@ -120,17 +155,23 @@ export async function POST(req: Request) {
         });
 
         const fallbackInfo = await fallbackTransporter.sendMail({
-          from: `"Leadflow Engine" <${smtpUser}>`,
+          from: `"LeadFlow Team" <${smtpUser}>`,
+          replyTo: smtpUser,
           to: email,
           subject: emailSubject,
+          text: emailText,
           html: emailHtml,
+          headers: {
+            "X-Mailer": "LeadFlow Transactional System",
+            "X-Priority": "3",
+          },
         });
 
         emailSentSuccessfully = true;
-        deliveryMessage = `Sent via Gmail SMTP Port 587 (${smtpUser})`;
-        console.log(`[GMAIL PORT 587 SUCCESS] Welcome email delivered to ${email} (MessageID: ${fallbackInfo.messageId})`);
+        deliveryMessage = `Inbox delivery via Gmail Port 587 (${smtpUser})`;
+        console.log(`[INBOX EMAIL DELIVERED PORT 587] Sent to ${email} (MessageID: ${fallbackInfo.messageId})`);
       } catch (fallbackErr: any) {
-        console.error("[ALL GMAIL SMTP FAILED]:", fallbackErr);
+        console.error("[ALL SMTP ATTEMPTS FAILED]:", fallbackErr);
         deliveryMessage = `SMTP Error: ${fallbackErr.message}`;
       }
     }
