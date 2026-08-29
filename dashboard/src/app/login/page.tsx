@@ -48,6 +48,9 @@ export default function LoginPage() {
         await registerWithEmail(email, password, name);
         setSuccess("Account created successfully! Redirecting to dashboard...");
       }
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("welcome_offer_active", "true");
+      }
       setTimeout(() => {
         router.push("/dashboard");
       }, 500);

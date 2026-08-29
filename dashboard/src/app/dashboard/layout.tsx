@@ -35,6 +35,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [notifications, setNotifications] = useState<SystemNotif[]>([]);
   const [hasUnread, setHasUnread] = useState(false);
 
+  // Welcome Offer Banner State
+  const [showWelcomeOfferBanner, setShowWelcomeOfferBanner] = useState(false);
+
   const isAdmin = user?.email?.toLowerCase() === "admin@gmail.com";
 
   useEffect(() => {
@@ -42,6 +45,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       router.push("/login");
     }
   }, [user, loading, router]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && user) {
+      const isOfferActive = sessionStorage.getItem("welcome_offer_active") === "true";
+      const isDismissed = sessionStorage.getItem("welcome_offer_dismissed") === "true";
+      if (!isDismissed) {
+        setShowWelcomeOfferBanner(true);
+      }
+    }
+  }, [user]);
 
   const fetchNotifs = async () => {
     if (!user) return;
@@ -69,8 +82,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           });
         }
       });
-      setNotifications(list);
-      if (list.length > 0) setHasUnread(true);
+
+      const welcomeOfferNotif: SystemNotif = {
+        id: "welcome_offer_notif",
+        title: "🎁 Exclusive Welcome Offer Waiting",
+        message: "Your exclusive welcome offer is waiting. Be sure to claim it before it expires.",
+        target: "all",
+        type: "welcome_offer",
+        status: "pending",
+        sender: "LeadFlow System",
+        createdAt: new Date(),
+      };
+
+      setNotifications([welcomeOfferNotif, ...list]);
+      setHasUnread(true);
     } catch (err) {
       console.error("Error fetching notifications:", err);
     }
@@ -470,6 +495,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                               </div>
                             )}
 
+                            {/* Claim controls for Welcome Offer Notification */}
+                            {n.type === "welcome_offer" && (
+                              <div className="pt-1.5 flex items-center gap-2">
+                                <button
+                                  onClick={() => {
+                                    setIsPricingModalOpen(true);
+                                    setNotifOpen(false);
+                                  }}
+                                  className="px-3 py-1 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-lg text-[10px] font-extrabold shadow-xs transition-all cursor-pointer flex items-center gap-1"
+                                >
+                                  <span className="material-symbols-outlined text-[12px]">auto_awesome</span>
+                                  Claim Exclusive Offer
+                                </button>
+                              </div>
+                            )}
+
                             <span className="text-[9px] font-semibold text-primary uppercase block">From: {n.sender}</span>
                           </div>
                         ))
@@ -505,6 +546,57 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* Dynamic Pages Area */}
         <main className="flex-1 mt-16 p-6 md:p-8 animate-fade-in bg-surface-container-low">
           <div className="max-w-[1200px] mx-auto">
+            
+            {/* Welcome Offer Banner Toast */}
+            {showWelcomeOfferBanner && (
+              <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 text-white shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4 animate-fade-in border border-amber-300/40">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center font-bold text-xl shadow-xs shrink-0">
+                    🎁
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-extrabold uppercase bg-white/20 text-white px-2 py-0.5 rounded-full border border-white/30">
+                        Welcome Offer
+                      </span>
+                      <span className="text-[11px] text-amber-100 font-medium">Exclusive Deal</span>
+                    </div>
+                    <p className="text-sm font-extrabold text-white mt-0.5">
+                      Your exclusive welcome offer is waiting. Be sure to claim it before it expires.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={() => {
+                      setIsPricingModalOpen(true);
+                      setShowWelcomeOfferBanner(false);
+                      if (typeof window !== "undefined") {
+                        sessionStorage.setItem("welcome_offer_dismissed", "true");
+                      }
+                    }}
+                    className="px-4 py-2 bg-white text-slate-900 hover:bg-amber-50 font-extrabold text-xs rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-1.5"
+                  >
+                    <span className="material-symbols-outlined text-sm text-amber-600">auto_awesome</span>
+                    <span>Claim Offer Now</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setShowWelcomeOfferBanner(false);
+                      if (typeof window !== "undefined") {
+                        sessionStorage.setItem("welcome_offer_dismissed", "true");
+                      }
+                    }}
+                    className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-xl transition-colors cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-lg">close</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
             {children}
           </div>
         </main>
