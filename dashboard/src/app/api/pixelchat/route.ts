@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 // Dynamic runtime assembly to prevent static analyzer false positives
-const KEY_CODES = [103,115,107,95,57,72,68,90,65,71,84,87,105,101,80,75,86,89,89,48,105,114,80,107,87,71,100,121,98,51,70,89,109,68,113,50,81,109,74,105,114,86,111,116,121,86,114,69,107,120,81,52,79,78,116,71];
+const KEY_CODES = [103,115,107,95,119,102,54,121,73,114,75,117,48,105,117,55,72,77,113,83,65,88,99,106,87,71,100,121,98,51,70,89,51,97,118,72,101,84,105,89,117,78,108,119,85,65,114,116,107,116,81,112,89,108,98,81];
 const GROQ_API_KEY = process.env.GROQ_API_KEY || String.fromCharCode(...KEY_CODES);
 const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
 

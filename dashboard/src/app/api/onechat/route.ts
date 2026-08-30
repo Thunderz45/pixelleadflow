@@ -27,9 +27,11 @@ export async function POST(req: Request) {
     ];
 
     const modelsToTry = [
-      "llama-3.3-70b-versatile",
-      "llama3-70b-8192",
-      "mixtral-8x7b-32768",
+      "groq/compound",
+      "groq/compound-mini",
+      "openai/gpt-oss-120b",
+      "openai/gpt-oss-20b",
+      "qwen/qwen3.6-27b",
     ];
 
     for (const modelName of modelsToTry) {
