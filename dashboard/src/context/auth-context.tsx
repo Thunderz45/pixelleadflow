@@ -40,7 +40,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
 
       if (!userSnap.exists()) {
-        // New user creation (First-time login / registration)
+        // New user creation (First-time registration)
         await setDoc(userRef, {
           ...userData,
           createdAt: serverTimestamp(),
@@ -49,7 +49,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           welcomeEmailSent: true,
         });
 
-        // Send Welcome & Exclusive Offer Email on first time login
+        // Send ONE-TIME Welcome Email on first time registration
         if (firebaseUser.email) {
           fetch("/api/welcome-email", {
             method: "POST",
@@ -63,7 +63,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       } else {
         // Existing user update
-        await setDoc(userRef, userData, { merge: true });
+        const existingData = userSnap.data();
+        if (!existingData?.welcomeEmailSent && firebaseUser.email) {
+          // If welcome email was never sent for this account, send it ONCE and mark sent
+          await setDoc(userRef, { ...userData, welcomeEmailSent: true }, { merge: true });
+          fetch("/api/welcome-email", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: firebaseUser.email,
+              name: nameOverride || firebaseUser.displayName || firebaseUser.email.split("@")[0] || "User",
+              isFirstTime: true,
+            }),
+          }).catch((e) => console.error("Welcome email error:", e));
+        } else {
+          // Standard login update without sending duplicate emails
+          await setDoc(userRef, userData, { merge: true });
+        }
       }
     } catch (error) {
       console.error("Error syncing user profile to Firestore:", error);

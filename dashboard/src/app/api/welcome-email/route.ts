@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import nodemailer from "nodemailer";
+import { db } from "@/lib/firebase";
+import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 
 const MAIL_USER_CODES = [98,104,117,115,104,97,110,112,97,100,103,104,97,110,56,55,64,103,109,97,105,108,46,99,111,109];
 const MAIL_PASS_CODES = [104,122,117,97,97,111,97,106,102,117,119,103,105,122,105,114];
@@ -15,10 +17,30 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Recipient email address is required." }, { status: 400 });
     }
 
+    const recipientEmail = email.trim().toLowerCase();
+
+    // 1. Strict Server-Side Deduplication Check (Only 1 email ever per recipient)
+    try {
+      const logRef = doc(db, "sent_welcome_emails", recipientEmail);
+      const logSnap = await getDoc(logRef);
+      if (logSnap.exists()) {
+        console.log(`[WELCOME EMAIL SKIPPED] Email already delivered previously to ${recipientEmail}`);
+        return NextResponse.json({
+          success: true,
+          delivered: false,
+          alreadySent: true,
+          recipient: recipientEmail,
+          message: "Welcome email already delivered to this recipient.",
+        });
+      }
+    } catch (dbErr) {
+      console.warn("Firestore deduplication log check warning:", dbErr);
+    }
+
     const userName = name || email.split("@")[0] || "Valued User";
     
     // Clean anti-spam subject (no emojis or excessive exclamation marks)
-    const emailSubject = "Welcome to LeadFlow - Account Confirmation & Welcome Access";
+    const emailSubject = "Welcome to LeadFlow - Account Confirmation & Access";
 
     // Plain Text Version (Essential for bypassing spam filters)
     const emailText = `Hi ${userName},
@@ -59,13 +81,13 @@ https://pixelleadflow.in`;
       <td style="padding: 28px 24px; line-height: 1.6; font-size: 14px; color: #334155;">
         <p style="margin-top: 0; font-size: 15px; font-weight: 600; color: #0f172a;">Hi ${userName},</p>
         
-        <p>Thank you for signing in to LeadFlow. Your account is ready for discovering high-intent business leads and building AI website prototypes.</p>
+        <p>Thank you for signing up for LeadFlow. Your account is ready for discovering high-intent business leads and building AI website prototypes.</p>
 
         <!-- Welcome Offer Card -->
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; margin: 20px 0;">
           <tr>
             <td style="padding: 16px; text-align: left;">
-              <p style="margin: 0 0 4px 0; font-size: 12px; font-weight: 700; color: #b45309; uppercase; tracking-wider: 1px;">WELCOME ACCESS OFFER</p>
+              <p style="margin: 0 0 4px 0; font-size: 12px; font-weight: 700; color: #b45309; text-transform: uppercase;">WELCOME ACCESS OFFER</p>
               <p style="margin: 0; font-size: 14px; font-weight: 700; color: #78350f;">
                 Your exclusive welcome offer is waiting. Be sure to claim it before it expires.
               </p>
@@ -100,7 +122,7 @@ https://pixelleadflow.in`;
     <tr>
       <td style="background-color: #f8fafc; padding: 16px 24px; text-align: center; font-size: 11px; color: #94a3b8; border-top: 1px solid #f1f5f9;">
         <p style="margin: 0;">LeadFlow Inc. • B2B Lead Engine</p>
-        <p style="margin: 4px 0 0 0;">This email was sent to ${email} regarding your account registration.</p>
+        <p style="margin: 4px 0 0 0;">This email was sent to ${recipientEmail} regarding your account registration.</p>
       </td>
     </tr>
 
@@ -126,20 +148,24 @@ https://pixelleadflow.in`;
 
       const info = await transporter.sendMail({
         from: `"LeadFlow Team" <${smtpUser}>`,
-        replyTo: smtpUser,
-        to: email,
+        replyTo: `"LeadFlow Support" <${smtpUser}>`,
+        to: recipientEmail,
         subject: emailSubject,
         text: emailText,
         html: emailHtml,
         headers: {
           "X-Mailer": "LeadFlow Transactional System",
           "X-Priority": "3",
+          "Auto-Submitted": "auto-generated",
+          "X-Auto-Response-Suppress": "All",
+          "Precedence": "bulk",
+          "List-Unsubscribe": `<mailto:${smtpUser}>`,
         },
       });
 
       emailSentSuccessfully = true;
       deliveryMessage = `Inbox delivery via Gmail SMTP (${smtpUser})`;
-      console.log(`[INBOX EMAIL DELIVERED] Sent to ${email} (MessageID: ${info.messageId})`);
+      console.log(`[INBOX EMAIL DELIVERED] Sent to ${recipientEmail} (MessageID: ${info.messageId})`);
     } catch (gmailErr: any) {
       console.warn("[GMAIL SMTP FAIL] Trying TLS Port 587:", gmailErr.message);
 
@@ -156,23 +182,40 @@ https://pixelleadflow.in`;
 
         const fallbackInfo = await fallbackTransporter.sendMail({
           from: `"LeadFlow Team" <${smtpUser}>`,
-          replyTo: smtpUser,
-          to: email,
+          replyTo: `"LeadFlow Support" <${smtpUser}>`,
+          to: recipientEmail,
           subject: emailSubject,
           text: emailText,
           html: emailHtml,
           headers: {
             "X-Mailer": "LeadFlow Transactional System",
             "X-Priority": "3",
+            "Auto-Submitted": "auto-generated",
+            "X-Auto-Response-Suppress": "All",
+            "Precedence": "bulk",
+            "List-Unsubscribe": `<mailto:${smtpUser}>`,
           },
         });
 
         emailSentSuccessfully = true;
         deliveryMessage = `Inbox delivery via Gmail Port 587 (${smtpUser})`;
-        console.log(`[INBOX EMAIL DELIVERED PORT 587] Sent to ${email} (MessageID: ${fallbackInfo.messageId})`);
+        console.log(`[INBOX EMAIL DELIVERED PORT 587] Sent to ${recipientEmail} (MessageID: ${fallbackInfo.messageId})`);
       } catch (fallbackErr: any) {
         console.error("[ALL SMTP ATTEMPTS FAILED]:", fallbackErr);
         deliveryMessage = `SMTP Error: ${fallbackErr.message}`;
+      }
+    }
+
+    // Save deduplication log to Firestore on successful dispatch
+    if (emailSentSuccessfully) {
+      try {
+        const logRef = doc(db, "sent_welcome_emails", recipientEmail);
+        await setDoc(logRef, {
+          email: recipientEmail,
+          sentAt: serverTimestamp(),
+        });
+      } catch (logErr) {
+        console.warn("Error logging sent welcome email to Firestore:", logErr);
       }
     }
 
