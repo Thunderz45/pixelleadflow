@@ -509,29 +509,37 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       </span>
                     </div>
 
-                    {/* Expiration Note */}
-                    <div className="bg-amber-50/80 border border-amber-200/70 rounded-lg px-2.5 py-1 flex items-center justify-between text-[10px] font-semibold text-amber-800">
-                      <span className="flex items-center gap-1">
-                        <span className="material-symbols-outlined text-[12px] text-amber-600">schedule</span>
-                        24-Hour Auto Expiry Active
-                      </span>
-                      <span className="text-[9px] text-amber-600 font-bold uppercase">Auto-disappear</span>
-                    </div>
+                    {/* Expiration Note - Admin Only */}
+                    {isAdmin && (
+                      <div className="bg-amber-50/80 border border-amber-200/70 rounded-lg px-2.5 py-1 flex items-center justify-between text-[10px] font-semibold text-amber-800">
+                        <span className="flex items-center gap-1">
+                          <span className="material-symbols-outlined text-[12px] text-amber-600">schedule</span>
+                          24-Hour Auto Expiry Active
+                        </span>
+                        <span className="text-[9px] text-amber-600 font-bold uppercase">Admin View</span>
+                      </div>
+                    )}
 
                     <div className="max-h-72 overflow-y-auto divide-y divide-outline-variant/60 space-y-2 pr-1">
                       {notifications.length === 0 ? (
                         <div className="py-8 text-center text-on-surface-variant text-xs font-medium">
-                          No active notifications at this time (notifications auto-expire after 24h).
+                          No notifications at this time.
                         </div>
                       ) : (
                         notifications.map((n) => (
                           <div key={n.id} className="pt-2 first:pt-0 space-y-1">
                             <div className="flex items-start justify-between gap-2">
                               <p className="font-bold text-xs text-on-surface">{n.title}</p>
-                              <span className="text-[9px] font-bold text-amber-700 bg-amber-50 border border-amber-200/80 px-1.5 py-0.5 rounded-md flex items-center gap-1 shrink-0" title="Automatically disappears 24 hours after creation">
-                                <span className="material-symbols-outlined text-[10px]">timer</span>
-                                {formatTimeRemaining(n.createdAt)}
-                              </span>
+                              {isAdmin ? (
+                                <span className="text-[9px] font-bold text-amber-700 bg-amber-50 border border-amber-200/80 px-1.5 py-0.5 rounded-md flex items-center gap-1 shrink-0" title="Automatically disappears 24 hours after creation">
+                                  <span className="material-symbols-outlined text-[10px]">timer</span>
+                                  {formatTimeRemaining(n.createdAt)}
+                                </span>
+                              ) : (
+                                <span className="text-[9px] text-outline shrink-0">
+                                  {n.createdAt ? new Date(n.createdAt).toLocaleDateString() : "Just now"}
+                                </span>
+                              )}
                             </div>
                             <p className="text-[11px] text-on-surface-variant leading-tight">{n.message}</p>
 
@@ -594,11 +602,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         ))
                       )}
                     </div>
-                    <div className="pt-2 border-t border-outline-variant/60 text-center">
-                      <span className="text-[9px] text-on-surface-variant font-medium">
-                        ⏱️ Messages automatically disappear after 24 hours
-                      </span>
-                    </div>
+                    {isAdmin && (
+                      <div className="pt-2 border-t border-outline-variant/60 text-center">
+                        <span className="text-[9px] text-on-surface-variant font-medium">
+                          ⏱️ Messages automatically disappear after 24 hours (Admin Info)
+                        </span>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
