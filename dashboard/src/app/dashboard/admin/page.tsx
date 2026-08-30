@@ -93,7 +93,9 @@ export default function AdminDashboardPage() {
 
   const handleGrantSubscription = async (targetUser: UserRecord) => {
     try {
-      // Create subscription invitation notification for user
+      // Create subscription invitation notification for user (auto-expires in 24 hours)
+      const now = new Date();
+      const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000);
       await addDoc(collection(db, "notifications"), {
         type: "subscription_invite",
         status: "pending",
@@ -103,9 +105,10 @@ export default function AdminDashboardPage() {
         message: "Admin has gifted you a 1 Month Pro Subscription (100 Leads Scraping & 5 AI Website Generations / Mo). Please accept to activate your Pro tier!",
         sender: currentUser?.email || "LeadFlow Admin",
         createdAt: serverTimestamp(),
+        expiresAt: expiresAt,
       });
 
-      setAlertSuccess(`Sent Pro Subscription invitation to ${targetUser.email}! User can Accept or Reject on their notification bell.`);
+      setAlertSuccess(`Sent Pro Subscription invitation to ${targetUser.email}! Notification will auto-expire in 24 hours.`);
       loadUsers();
     } catch (err) {
       console.error("Error sending subscription invitation:", err);
@@ -136,16 +139,19 @@ export default function AdminDashboardPage() {
 
     setSendingNotif(true);
     try {
+      const now = new Date();
+      const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000);
       await addDoc(collection(db, "notifications"), {
         target: notifTarget,
         targetEmail: notifTarget === "email" ? targetEmail.trim() : null,
         title: notifTitle.trim(),
         message: notifMessage.trim(),
         createdAt: serverTimestamp(),
+        expiresAt: expiresAt,
         sender: currentUser?.email || "LeadFlow Admin",
       });
 
-      setAlertSuccess(`Broadcast notification "${notifTitle}" successfully sent!`);
+      setAlertSuccess(`Broadcast notification "${notifTitle}" successfully sent (set to auto-disappear in 24h)!`);
       setIsNotifModalOpen(false);
       setNotifTitle("");
       setNotifMessage("");

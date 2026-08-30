@@ -59,10 +59,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const fetchNotifs = async () => {
     if (!user) return;
     try {
-      const snap = await getDocs(query(collection(db, "notifications"), orderBy("createdAt", "desc"), limit(10)));
+      const now = Date.now();
+      const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
+
+      const snap = await getDocs(query(collection(db, "notifications"), orderBy("createdAt", "desc"), limit(20)));
       const list: SystemNotif[] = [];
       snap.forEach((d) => {
         const data = d.data();
+        const createdDate = data.createdAt?.toDate ? data.createdAt.toDate() : (data.createdAt ? new Date(data.createdAt) : new Date());
+        const notifAgeMs = now - createdDate.getTime();
+
+        // 24-Hour Expiration Filter: Automatically disappear notifications older than 24 hours
+        if (notifAgeMs >= TWENTY_FOUR_HOURS_MS) {
+          return;
+        }
+
         // Filter applicable notifications
         if (
           data.target === "all" ||
@@ -78,24 +89,43 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             type: data.type || "general",
             status: data.status || "read",
             sender: data.sender || "LeadFlow Admin",
-            createdAt: data.createdAt?.toDate() || new Date(),
+            createdAt: createdDate,
           });
         }
       });
 
-      const welcomeOfferNotif: SystemNotif = {
-        id: "welcome_offer_notif",
-        title: "🎁 Exclusive Welcome Offer Waiting",
-        message: "Your exclusive welcome offer is waiting. Be sure to claim it before it expires.",
-        target: "all",
-        type: "welcome_offer",
-        status: "pending",
-        sender: "LeadFlow System",
-        createdAt: new Date(),
-      };
+      // Handle 24-hour expiration for Welcome Offer notification
+      let welcomeCreated = new Date();
+      if (typeof window !== "undefined") {
+        const storedTime = sessionStorage.getItem("welcome_offer_created_at");
+        if (storedTime) {
+          welcomeCreated = new Date(storedTime);
+        } else {
+          sessionStorage.setItem("welcome_offer_created_at", welcomeCreated.toISOString());
+        }
+      }
 
-      setNotifications([welcomeOfferNotif, ...list]);
-      setHasUnread(true);
+      const welcomeAgeMs = now - welcomeCreated.getTime();
+      const combinedNotifs: SystemNotif[] = [];
+
+      // Only include Welcome Offer if created within the last 24 hours
+      if (welcomeAgeMs < TWENTY_FOUR_HOURS_MS) {
+        combinedNotifs.push({
+          id: "welcome_offer_notif",
+          title: "🎁 Exclusive Welcome Offer Waiting",
+          message: "Your exclusive welcome offer is waiting. Be sure to claim it before it expires.",
+          target: "all",
+          type: "welcome_offer",
+          status: "pending",
+          sender: "LeadFlow System",
+          createdAt: welcomeCreated,
+        });
+      }
+
+      combinedNotifs.push(...list);
+
+      setNotifications(combinedNotifs);
+      setHasUnread(combinedNotifs.length > 0);
     } catch (err) {
       console.error("Error fetching notifications:", err);
     }
@@ -104,6 +134,39 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   useEffect(() => {
     fetchNotifs();
   }, [user, isAdmin]);
+
+  // Real-time interval to automatically disappear notifications older than 24 hours while page is active
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = Date.now();
+      const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
+      setNotifications((prev) =>
+        prev.filter((n) => {
+          const createdTime = n.createdAt instanceof Date ? n.createdAt.getTime() : new Date(n.createdAt).getTime();
+          return (now - createdTime) < TWENTY_FOUR_HOURS_MS;
+        })
+      );
+    }, 10000); // Re-filter every 10 seconds
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const formatTimeRemaining = (createdAt: any) => {
+    if (!createdAt) return "24h left";
+    const createdTime = createdAt instanceof Date ? createdAt.getTime() : new Date(createdAt).getTime();
+    const expiresAt = createdTime + (24 * 60 * 60 * 1000);
+    const diffMs = expiresAt - Date.now();
+
+    if (diffMs <= 0) return "Expired";
+
+    const hours = Math.floor(diffMs / (1000 * 60 * 60));
+    const mins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+
+    if (hours > 0) {
+      return `${hours}h ${mins}m left`;
+    }
+    return `${mins}m left`;
+  };
 
   const handleAcceptInvite = async (notifId: string) => {
     if (!user) return;
@@ -446,18 +509,28 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       </span>
                     </div>
 
+                    {/* Expiration Note */}
+                    <div className="bg-amber-50/80 border border-amber-200/70 rounded-lg px-2.5 py-1 flex items-center justify-between text-[10px] font-semibold text-amber-800">
+                      <span className="flex items-center gap-1">
+                        <span className="material-symbols-outlined text-[12px] text-amber-600">schedule</span>
+                        24-Hour Auto Expiry Active
+                      </span>
+                      <span className="text-[9px] text-amber-600 font-bold uppercase">Auto-disappear</span>
+                    </div>
+
                     <div className="max-h-72 overflow-y-auto divide-y divide-outline-variant/60 space-y-2 pr-1">
                       {notifications.length === 0 ? (
                         <div className="py-8 text-center text-on-surface-variant text-xs font-medium">
-                          No notifications at this time.
+                          No active notifications at this time (notifications auto-expire after 24h).
                         </div>
                       ) : (
                         notifications.map((n) => (
                           <div key={n.id} className="pt-2 first:pt-0 space-y-1">
-                            <div className="flex items-center justify-between">
+                            <div className="flex items-start justify-between gap-2">
                               <p className="font-bold text-xs text-on-surface">{n.title}</p>
-                              <span className="text-[9px] text-outline">
-                                {n.createdAt ? new Date(n.createdAt).toLocaleDateString() : "Just now"}
+                              <span className="text-[9px] font-bold text-amber-700 bg-amber-50 border border-amber-200/80 px-1.5 py-0.5 rounded-md flex items-center gap-1 shrink-0" title="Automatically disappears 24 hours after creation">
+                                <span className="material-symbols-outlined text-[10px]">timer</span>
+                                {formatTimeRemaining(n.createdAt)}
                               </span>
                             </div>
                             <p className="text-[11px] text-on-surface-variant leading-tight">{n.message}</p>
@@ -511,10 +584,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                               </div>
                             )}
 
-                            <span className="text-[9px] font-semibold text-primary uppercase block">From: {n.sender}</span>
+                            <div className="flex items-center justify-between text-[9px] pt-0.5">
+                              <span className="font-semibold text-primary uppercase">From: {n.sender}</span>
+                              <span className="text-outline">
+                                {n.createdAt ? new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "Just now"}
+                              </span>
+                            </div>
                           </div>
                         ))
                       )}
+                    </div>
+                    <div className="pt-2 border-t border-outline-variant/60 text-center">
+                      <span className="text-[9px] text-on-surface-variant font-medium">
+                        ⏱️ Messages automatically disappear after 24 hours
+                      </span>
                     </div>
                   </div>
                 )}
